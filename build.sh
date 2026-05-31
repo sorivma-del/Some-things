@@ -8,7 +8,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 mkdir -p "$APP/Contents/Resources"
 
-swiftc Sources/Stretchy/*.swift \
+xcrun swiftc Sources/Stretchy/*.swift \
     -o "$APP/Contents/MacOS/Stretchy"
 
 cp Sources/Stretchy/Info.plist "$APP/Contents/Info.plist"
