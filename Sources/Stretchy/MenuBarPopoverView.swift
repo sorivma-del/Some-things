@@ -24,7 +24,7 @@ struct MenuBarPopoverView: View {
                             .font(.system(size: 13))
                     }
 
-                    Text("Every \(timerManager.intervalHours) hour\(timerManager.intervalHours == 1 ? "" : "s")")
+                    Text(timerManager.intervalLabel)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(Color(red: 0.9, green: 0.3, blue: 0.5))
                 }
@@ -102,7 +102,7 @@ struct MenuBarPopoverView: View {
 
     private func showSettings() {
         let win = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 300, height: 140),
+            contentRect: NSRect(x: 0, y: 0, width: 340, height: 160),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -118,16 +118,30 @@ struct MenuBarPopoverView: View {
 struct SettingsView: View {
     @ObservedObject var timerManager: TimerManager
 
+    private let options: [(label: String, minutes: Int)] = [
+        ("20 min", 20), ("30 min", 30), ("45 min", 45),
+        ("1 hr", 60), ("2 hr", 120)
+    ]
+
     var body: some View {
-        Form {
-            Picker("Remind me every", selection: $timerManager.intervalHours) {
-                ForEach([1, 2, 3, 4], id: \.self) { h in
-                    Text("\(h) hour\(h == 1 ? "" : "s")").tag(h)
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Remind me every")
+                .font(.system(size: 13, weight: .semibold))
+
+            Picker("", selection: $timerManager.intervalMinutes) {
+                ForEach(options, id: \.minutes) { opt in
+                    Text(opt.label).tag(opt.minutes)
                 }
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
+
+            Text("Ergonomics tip: standing up and moving every 30 minutes keeps your posture happy.")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(20)
-        .frame(width: 300, height: 140)
+        .frame(width: 340, height: 160)
     }
 }

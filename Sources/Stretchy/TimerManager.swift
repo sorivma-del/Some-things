@@ -3,14 +3,14 @@ import Combine
 
 class TimerManager: ObservableObject {
     @Published var nextStretchDate: Date = Date()
-    @Published var intervalHours: Int = 2
+    @Published var intervalMinutes: Int = 30
 
     var onStretchTime: (() -> Void)?
     private var timer: Timer?
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        $intervalHours
+        $intervalMinutes
             .dropFirst()
             .sink { [weak self] _ in self?.scheduleNext() }
             .store(in: &cancellables)
@@ -22,7 +22,7 @@ class TimerManager: ObservableObject {
 
     func scheduleNext() {
         timer?.invalidate()
-        nextStretchDate = Date().addingTimeInterval(Double(intervalHours) * 3600)
+        nextStretchDate = Date().addingTimeInterval(Double(intervalMinutes) * 60)
         scheduleTimer(for: nextStretchDate)
     }
 
@@ -50,6 +50,14 @@ class TimerManager: ObservableObject {
         let f = DateFormatter()
         f.timeStyle = .short
         return f.string(from: nextStretchDate)
+    }
+
+    var intervalLabel: String {
+        if intervalMinutes % 60 == 0 {
+            let h = intervalMinutes / 60
+            return "Every \(h) hour\(h == 1 ? "" : "s")"
+        }
+        return "Every \(intervalMinutes) min"
     }
 
     var timeUntilNextStretch: String {
