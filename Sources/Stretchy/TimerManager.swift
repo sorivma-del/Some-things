@@ -54,10 +54,9 @@ class TimerManager: ObservableObject {
 
     var intervalLabel: String {
         if intervalMinutes % 60 == 0 {
-            let h = intervalMinutes / 60
-            return "Every \(h) hour\(h == 1 ? "" : "s")"
+            return "Каждые \(intervalMinutes / 60) ч"
         }
-        return "Every \(intervalMinutes) min"
+        return "Каждые \(intervalMinutes) мин"
     }
 
     var timeUntilNextStretch: String {

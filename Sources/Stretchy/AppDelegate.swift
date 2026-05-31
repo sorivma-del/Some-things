@@ -17,6 +17,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         timerManager.start()
     }
 
+    // Keep the app alive (menu bar only) even when the stretch window closes.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return false
+    }
+
     // ── Menu bar setup ────────────────────────────────────────────
 
     private func setupMenuBar() {

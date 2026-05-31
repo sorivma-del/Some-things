@@ -8,11 +8,11 @@ struct StretchPopupView: View {
     @State private var messageVisible = false
 
     private static let messages = [
-        "Get up, stand up!",
-        "Time to stretch!",
-        "Let's not have the posture of a cashew 🙀",
-        "Your body says: please move!",
-        "Stretch break! Stand tall!"
+        "Вставай, потянись!",
+        "Пора размяться!",
+        "Не будем сидеть как кешью 🙀",
+        "Тело просит: подвигайся!",
+        "Перерыв! Выпрямись и потянись!"
     ]
     @State private var message = messages.randomElement()!
 
@@ -46,7 +46,7 @@ struct StretchPopupView: View {
                     timerManager.scheduleNext()
                     onDismiss()
                 }) {
-                    Text("Done! ✓")
+                    Text("Готово ✓")
                         .font(.system(size: 18, weight: .bold))
                         .frame(width: 220)
                         .padding(.vertical, 14)
@@ -64,7 +64,7 @@ struct StretchPopupView: View {
                             timerManager.snooze(minutes: min)
                             onDismiss()
                         }) {
-                            Text("Snooze \(min)m")
+                            Text("Ещё \(min) мин")
                                 .font(.system(size: 14, weight: .medium))
                                 .padding(.horizontal, 18)
                                 .padding(.vertical, 9)

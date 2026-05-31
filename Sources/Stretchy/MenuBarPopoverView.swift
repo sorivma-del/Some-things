@@ -20,7 +20,7 @@ struct MenuBarPopoverView: View {
                         Image(systemName: "bell.fill")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text("Next: \(timerManager.nextStretchFormatted)")
+                        Text("Следующее: \(timerManager.nextStretchFormatted)")
                             .font(.system(size: 13))
                     }
 
@@ -39,9 +39,9 @@ struct MenuBarPopoverView: View {
                         .foregroundColor(Color(red: 0.9, green: 0.3, blue: 0.5))
                         .font(.system(size: 14))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Ready for your next stretch")
+                        Text("Готов к следующей разминке")
                             .font(.system(size: 12, weight: .semibold))
-                        Text("Stretchy will pop up when it is time.")
+                        Text("Котик появится, когда придёт время.")
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
                     }
@@ -52,7 +52,7 @@ struct MenuBarPopoverView: View {
 
                 // ── Stretch now ───────────────────────────────────
                 Button(action: { timerManager.stretchNow() }) {
-                    Label("Stretch now", systemImage: "figure.walk")
+                    Label("Потянуться сейчас", systemImage: "figure.walk")
                         .font(.system(size: 15, weight: .semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 11)
@@ -65,19 +65,24 @@ struct MenuBarPopoverView: View {
                 .padding(.bottom, 8)
 
                 // ── Snooze chips ──────────────────────────────────
-                HStack(spacing: 8) {
-                    ForEach([10, 20, 30], id: \.self) { min in
-                        Button(action: { timerManager.snooze(minutes: min) }) {
-                            Label("\(min) min", systemImage: "clock")
-                                .font(.system(size: 11, weight: .medium))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(Color.white.opacity(0.65))
-                                .cornerRadius(8)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Напомнить позже:")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                    HStack(spacing: 8) {
+                        ForEach([10, 20, 30], id: \.self) { min in
+                            Button(action: { timerManager.snooze(minutes: min) }) {
+                                Label("\(min) мин", systemImage: "clock")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(Color.white.opacity(0.65))
+                                    .cornerRadius(8)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+                        Spacer()
                     }
-                    Spacer()
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
@@ -86,9 +91,9 @@ struct MenuBarPopoverView: View {
 
                 // ── Bottom bar ────────────────────────────────────
                 HStack {
-                    Button("Settings") { showSettings() }
+                    Button("Настройки") { showSettings() }
                     Spacer()
-                    Button("Quit") { NSApp.terminate(nil) }
+                    Button("Выход") { NSApp.terminate(nil) }
                 }
                 .buttonStyle(.plain)
                 .font(.system(size: 12))
@@ -107,7 +112,7 @@ struct MenuBarPopoverView: View {
             backing: .buffered,
             defer: false
         )
-        win.title = "Stretchy Settings"
+        win.title = "Настройки Stretchy"
         win.center()
         win.contentView = NSHostingView(rootView: SettingsView(timerManager: timerManager))
         win.makeKeyAndOrderFront(nil)
@@ -119,13 +124,13 @@ struct SettingsView: View {
     @ObservedObject var timerManager: TimerManager
 
     private let options: [(label: String, minutes: Int)] = [
-        ("20 min", 20), ("30 min", 30), ("45 min", 45),
-        ("1 hr", 60), ("2 hr", 120)
+        ("20 мин", 20), ("30 мин", 30), ("45 мин", 45),
+        ("1 ч", 60), ("2 ч", 120)
     ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Remind me every")
+            Text("Напоминать каждые")
                 .font(.system(size: 13, weight: .semibold))
 
             Picker("", selection: $timerManager.intervalMinutes) {
@@ -136,7 +141,7 @@ struct SettingsView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
 
-            Text("Ergonomics tip: standing up and moving every 30 minutes keeps your posture happy.")
+            Text("Совет: вставать и двигаться каждые 30 минут полезно для осанки.")
                 .font(.system(size: 11))
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
