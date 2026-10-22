@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/environment.tscn" id="1_env"]
 [ext_resource type="PackedScene" path="res://scenes/village.tscn" id="2_village"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/gate.tscn" id="4_gate"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="5_player"]
 [ext_resource type="PackedScene" path="res://scenes/camera_rig.tscn" id="6_rig"]
+[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="7_hud"]
 
 [node name="Main" type="Node3D"]
 
@@ -23,3 +24,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 3.5)
 
 [node name="CameraRig" parent="." node_paths=PackedStringArray("target") instance=ExtResource("6_rig")]
 target = NodePath("../Player")
+
+[node name="HUD" parent="." instance=ExtResource("7_hud")]

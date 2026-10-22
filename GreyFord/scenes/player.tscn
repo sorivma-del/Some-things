@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/character_model.gd" id="2_model"]
 [ext_resource type="PackedScene" path="res://resources/models/quaternius/base/Superhero_Female_FullBody.gltf" id="3_body"]
 [ext_resource type="PackedScene" path="res://resources/models/quaternius/outfits/Female_Ranger.gltf" id="4_outfit"]
+[ext_resource type="Script" path="res://scripts/interaction_detector.gd" id="5_detector"]
 
 [sub_resource type="CapsuleShape3D" id="shape"]
 radius = 0.35
@@ -23,3 +24,7 @@ parts = Array[PackedScene]([ExtResource("4_outfit")])
 head_only_parts = PackedStringArray("Superhero_Female")
 model_scale = 0.96
 tint = Color(0.8, 0.8, 0.76, 1)
+
+[node name="InteractionDetector" type="Area3D" parent="."]
+position = Vector3(0, 0.9, 0)
+script = ExtResource("5_detector")
