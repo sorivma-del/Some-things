@@ -66,6 +66,8 @@ GreyFord/
   `Inspectable` — объект с коротким диалогом; `npc.gd` — NPC с диалогом и анимацией речи.
 - `Terrain` — рельеф, коллизия HeightMapShape3D, `height_at()` для расстановки;
   `KitBuilder` — дома/церковь из модулей (сетка 2 м, фасад смотрит в +Z).
+- `CutsceneDirector` (узел в main) — вступление (пропуск E/Esc) и финал по флагу
+  `gate_open`; своя камера и оверлей. `godot -- --skip-intro` начинает сразу с игры.
 - `CharacterModel` — модульный персонаж Quaternius; `UiStyle` — шрифт и обводка текста
   (Cormorant Garamond, OFL, `resources/fonts/`).
 

@@ -1,6 +1,9 @@
 extends CharacterBody3D
 ## Mara: third-person movement relative to the active camera. Ignores input while
-## GameState.controls_locked is set (dialogue, cutscenes).
+## GameState.controls_locked is set (dialogue, cutscenes); cutscenes move her with walk_to().
+
+## Emitted when a walk_to() target is reached.
+signal arrived
 
 @export var walk_speed: float = 2.6
 @export var acceleration: float = 14.0
@@ -9,6 +12,8 @@ extends CharacterBody3D
 @export var walk_animation: StringName = &"Walk"
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+var _walk_target: Vector3
+var _walking_to: bool = false
 
 @onready var _model: CharacterModel = $Model
 
@@ -18,7 +23,15 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= _gravity * delta
 
 	var direction := Vector3.ZERO
-	if not GameState.controls_locked:
+	if _walking_to:
+		var to := _walk_target - global_position
+		to.y = 0.0
+		if to.length() < 0.25:
+			_walking_to = false
+			arrived.emit()
+		else:
+			direction = to.normalized()
+	elif not GameState.controls_locked:
 		var input := Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 		direction = _camera_relative(input)
 
@@ -32,6 +45,12 @@ func _physics_process(delta: float) -> void:
 	if direction.length_squared() > 0.001:
 		var target_yaw := atan2(-direction.x, -direction.z)
 		_model.rotation.y = lerp_angle(_model.rotation.y, target_yaw, clampf(turn_speed * delta, 0.0, 1.0))
+
+
+## Walk to a point on the ground regardless of player input (for cutscenes).
+func walk_to(point: Vector3) -> void:
+	_walk_target = point
+	_walking_to = true
 
 
 ## Rotate the model to look at a point on the ground plane (used by dialogues/cutscenes).
