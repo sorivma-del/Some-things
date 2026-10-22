@@ -12,6 +12,8 @@ const BOUNDS := Rect2(-28.0, -33.0, 56.0, 56.0)
 const PALISADE_Z := 22.0
 const GATE_HALF_WIDTH := 2.9
 const CHURCH_POS := Vector2(0.0, -19.0)
+## Spots kept clear of grass so it never hides the people standing there: x, z, radius.
+const CLEAR_SPOTS: Array[Vector3] = [Vector3(2.2, 20.2, 2.5), Vector3(-2.45, -0.64, 2.0)]
 const DRY_GRASS := Color(0.5, 0.48, 0.34)
 const GRASS_SHADER: Shader = preload("res://resources/grass_wind.gdshader")
 
@@ -100,13 +102,19 @@ func _build_props() -> void:
 
 
 func _build_palisade() -> void:
-	var wood := Build.bark_material(Color(0.55, 0.48, 0.42))
+	# A handful of tints and texture offsets so the logs do not read as one repeated log.
+	var woods: Array[StandardMaterial3D] = []
+	for i: int in 6:
+		var shade := _rng.randf_range(0.82, 1.12)
+		var tint := Color(0.55 * shade, 0.48 * shade * _rng.randf_range(0.95, 1.03), 0.42 * shade)
+		woods.append(Build.bark_material(tint, Vector3(_rng.randf(), _rng.randf(), _rng.randf())))
 	var x := BOUNDS.position.x
 	while x <= BOUNDS.end.x:
 		if absf(x) > GATE_HALF_WIDTH:
 			var h := _rng.randf_range(3.2, 3.9)
 			var y := _terrain.height_at(x, PALISADE_Z) - 0.3
-			var stake := Build.cylinder(self, 0.24, h, Vector3(x, y + h * 0.5, PALISADE_Z), wood, 7)
+			var wood: StandardMaterial3D = woods.pick_random()
+			var stake := Build.cylinder(self, _rng.randf_range(0.21, 0.27), h, Vector3(x, y + h * 0.5, PALISADE_Z), wood, 7)
 			stake.rotation_degrees = Vector3(_rng.randf_range(-3.0, 3.0), _rng.randf() * 360.0, _rng.randf_range(-3.0, 3.0))
 			Build.cone(self, 0.24, 0.5, Vector3(x, y + h + 0.25, PALISADE_Z), wood, 7)
 		x += 0.5
@@ -150,7 +158,8 @@ func _scatter_undergrowth() -> void:
 	for i: int in 9000:
 		var p := Vector2(_rng.randf_range(-45.0, 45.0), _rng.randf_range(-45.0, 45.0))
 		var wild := _terrain.forest_weight(p.x, p.y)
-		if _rng.randf() > _terrain.grass_weight(p.x, p.y) * lerpf(0.3, 1.0, wild) or _blocked(p):
+		if _rng.randf() > _terrain.grass_weight(p.x, p.y) * lerpf(0.3, 1.0, wild) or _blocked(p) \
+				or _terrain.mud_weight(p.x, p.y) > 0.2:
 			continue
 		var kind: int = _rng.randi_range(0, 3) if wild > 0.5 else _rng.randi_range(0, 1) * 2
 		var size := _rng.randf_range(0.3, 0.55) if wild < 0.5 else _rng.randf_range(0.45, 0.85)
@@ -210,6 +219,9 @@ func _set_shadows(node: Node, enabled: bool) -> void:
 func _blocked(p: Vector2) -> bool:
 	if p.length() < 4.0 or absf(p.y - PALISADE_Z) < 1.0:
 		return true
+	for spot: Vector3 in CLEAR_SPOTS:
+		if p.distance_to(Vector2(spot.x, spot.y)) < spot.z:
+			return true
 	if absf(p.x) < 4.0 and absf(p.y - CHURCH_POS.y + 3.0) < 11.0:
 		return true
 	for house: Dictionary in HOUSES:

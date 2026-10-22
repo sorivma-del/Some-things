@@ -1,7 +1,7 @@
 class_name Effects
 extends RefCounted
-## Particle effects built in code: fire, sparks, smoke, ground mist. CPU particles so
-## they behave the same in the Forward+ and Compatibility renderers.
+## Particle effects built in code: fire, sparks, smoke, ground mist (CPU particles) and
+## the torch flame (GPU particles).
 
 static var _soft_texture: GradientTexture2D
 
@@ -20,6 +20,40 @@ static func flames(parent: Node3D, pos: Vector3) -> CPUParticles3D:
 	p.color_ramp = _gradient([
 		[0.0, Color(1.0, 0.85, 0.45, 0.0)], [0.12, Color(1.0, 0.75, 0.35, 0.9)],
 		[0.5, Color(1.0, 0.42, 0.12, 0.6)], [1.0, Color(0.6, 0.1, 0.02, 0.0)]])
+	return p
+
+
+## A torch flame on the GPU: small additive tongues rising from the torch head.
+static func torch_flame(parent: Node3D, pos: Vector3) -> GPUParticles3D:
+	var process := ParticleProcessMaterial.new()
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	process.emission_sphere_radius = 0.05
+	process.direction = Vector3.UP
+	process.spread = 10.0
+	process.gravity = Vector3(0.0, 1.2, 0.0)
+	process.initial_velocity_min = 0.15
+	process.initial_velocity_max = 0.35
+	process.scale_min = 0.7
+	process.scale_max = 1.2
+	var scale_curve := CurveTexture.new()
+	scale_curve.curve = _curve([Vector2(0.0, 0.6), Vector2(0.3, 1.0), Vector2(1.0, 0.0)])
+	process.scale_curve = scale_curve
+	var ramp := GradientTexture1D.new()
+	ramp.gradient = _gradient([
+		[0.0, Color(1.0, 0.9, 0.55, 0.0)], [0.15, Color(1.0, 0.75, 0.35, 0.95)],
+		[0.6, Color(1.0, 0.4, 0.1, 0.55)], [1.0, Color(0.5, 0.08, 0.02, 0.0)]])
+	process.color_ramp = ramp
+
+	var p := GPUParticles3D.new()
+	p.position = pos
+	p.amount = 24
+	p.lifetime = 0.55
+	p.preprocess = 0.55
+	p.process_material = process
+	p.draw_pass_1 = _billboard_quad(0.22, BaseMaterial3D.BLEND_MODE_ADD)
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	p.visibility_aabb = AABB(Vector3(-0.5, -0.2, -0.5), Vector3(1.0, 1.4, 1.0))
+	parent.add_child(p)
 	return p
 
 
@@ -86,6 +120,13 @@ static func _particles(parent: Node3D, pos: Vector3, amount: int, lifetime: floa
 	# emitter in the Compatibility renderer, and smoke would grow visibly after load.
 	p.preprocess = lifetime
 	p.randomness = 0.4
+	p.mesh = _billboard_quad(size, blend)
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(p)
+	return p
+
+
+static func _billboard_quad(size: float, blend: BaseMaterial3D.BlendMode) -> QuadMesh:
 	var quad := QuadMesh.new()
 	quad.size = Vector2(size, size)
 	var mat := StandardMaterial3D.new()
@@ -96,10 +137,7 @@ static func _particles(parent: Node3D, pos: Vector3, amount: int, lifetime: floa
 	mat.vertex_color_use_as_albedo = true
 	mat.albedo_texture = _soft()
 	quad.material = mat
-	p.mesh = quad
-	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	parent.add_child(p)
-	return p
+	return quad
 
 
 static func _soft() -> GradientTexture2D:

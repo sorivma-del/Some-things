@@ -47,13 +47,11 @@ func _ready() -> void:
 
 
 func _build_torch(pos: Vector3) -> void:
-	var flame := Color(1.0, 0.55, 0.2)
-	Build.cylinder(self, 0.05, 0.7, pos, Build.material(Color(0.15, 0.1, 0.07)), 5, Vector3(-20.0, 0.0, 0.0))
-	var fire := Build.cone(self, 0.1, 0.3, pos + Vector3(0.0, 0.45, -0.12), Build.material(flame, flame, 5.0), 5)
-	fire.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var light := OmniLight3D.new()
-	light.light_color = flame
-	light.light_energy = 1.6
+	Build.cylinder(self, 0.05, 0.7, pos, Build.bark_material(Color(0.22, 0.17, 0.13)), 6, Vector3(-20.0, 0.0, 0.0))
+	Effects.torch_flame(self, pos + Vector3(0.0, 0.38, -0.12))
+	var light := FlickerLight.new()
+	light.light_color = Color(1.0, 0.55, 0.2)
+	light.base_energy = 1.6
 	light.omni_range = 7.0
 	light.shadow_enabled = true
 	light.position = pos + Vector3(0.0, 0.6, -0.4)

@@ -23,13 +23,15 @@ static func material(color: Color, glow: Color = Color.BLACK, glow_energy: float
 
 
 ## Rough wood for palisade and gate, mapped in world space so primitives need no UVs.
-static func bark_material(tint: Color) -> StandardMaterial3D:
+## `uv_offset` shifts the texture so neighbouring logs do not repeat the same grain.
+static func bark_material(tint: Color, uv_offset: Vector3 = Vector3.ZERO) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = BARK
 	mat.albedo_color = tint
 	mat.uv1_triplanar = true
 	mat.uv1_world_triplanar = true
 	mat.uv1_scale = Vector3(0.6, 0.6, 0.6)
+	mat.uv1_offset = uv_offset
 	mat.roughness = 1.0
 	return mat
 

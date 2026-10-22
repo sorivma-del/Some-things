@@ -17,7 +17,7 @@ sky = SubResource("sky")
 ambient_light_source = 3
 ambient_light_color = Color(0.32, 0.36, 0.48, 1)
 ambient_light_sky_contribution = 0.4
-ambient_light_energy = 0.22
+ambient_light_energy = 0.3
 tonemap_mode = 2
 tonemap_exposure = 1.05
 ssao_enabled = true
@@ -49,3 +49,10 @@ light_energy = 0.45
 shadow_enabled = true
 shadow_opacity = 0.85
 directional_shadow_max_distance = 70.0
+
+[node name="RimLight" type="DirectionalLight3D" parent="."]
+position = Vector3(0, 25, 0)
+rotation_degrees = Vector3(-78, -40, 0)
+light_color = Color(0.55, 0.64, 0.86, 1)
+light_energy = 0.28
+light_specular = 0.6
