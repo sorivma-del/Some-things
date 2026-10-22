@@ -5,10 +5,12 @@ extends CharacterBody3D
 @export var walk_speed: float = 3.6
 @export var acceleration: float = 14.0
 @export var turn_speed: float = 10.0
+@export var idle_animation: StringName = &"Idle"
+@export var walk_animation: StringName = &"Walking_A"
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
-@onready var _model: Node3D = $Model
+@onready var _model: CharacterModel = $Model
 
 
 func _physics_process(delta: float) -> void:
@@ -25,6 +27,7 @@ func _physics_process(delta: float) -> void:
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 	move_and_slide()
+	_model.play(walk_animation if horizontal.length() > 0.4 else idle_animation)
 
 	if direction.length_squared() > 0.001:
 		var target_yaw := atan2(-direction.x, -direction.z)

@@ -1,50 +1,12 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
-[ext_resource type="Shader" path="res://resources/flat.gdshader" id="2_flat"]
+[ext_resource type="Script" path="res://scripts/character_model.gd" id="2_model"]
+[ext_resource type="PackedScene" path="res://resources/models/kaykit/Rogue_Hooded.glb" id="3_mara"]
 
 [sub_resource type="CapsuleShape3D" id="shape"]
 radius = 0.35
 height = 1.7
-
-[sub_resource type="ShaderMaterial" id="mat_cloak"]
-shader = ExtResource("2_flat")
-shader_parameter/albedo = Color(0.25, 0.3, 0.22, 1)
-
-[sub_resource type="ShaderMaterial" id="mat_hood"]
-shader = ExtResource("2_flat")
-shader_parameter/albedo = Color(0.2, 0.24, 0.18, 1)
-
-[sub_resource type="ShaderMaterial" id="mat_leather"]
-shader = ExtResource("2_flat")
-shader_parameter/albedo = Color(0.36, 0.24, 0.14, 1)
-
-[sub_resource type="ShaderMaterial" id="mat_face"]
-shader = ExtResource("2_flat")
-shader_parameter/albedo = Color(0.62, 0.5, 0.42, 1)
-
-[sub_resource type="CapsuleMesh" id="mesh_body"]
-material = SubResource("mat_cloak")
-radius = 0.35
-height = 1.7
-radial_segments = 8
-rings = 2
-
-[sub_resource type="CylinderMesh" id="mesh_hood"]
-material = SubResource("mat_hood")
-top_radius = 0.0
-bottom_radius = 0.33
-height = 0.5
-radial_segments = 6
-rings = 0
-
-[sub_resource type="BoxMesh" id="mesh_face"]
-material = SubResource("mat_face")
-size = Vector3(0.26, 0.2, 0.1)
-
-[sub_resource type="BoxMesh" id="mesh_satchel"]
-material = SubResource("mat_leather")
-size = Vector3(0.12, 0.3, 0.36)
 
 [node name="Player" type="CharacterBody3D" groups=["player"]]
 script = ExtResource("1_player")
@@ -54,19 +16,7 @@ position = Vector3(0, 0.85, 0)
 shape = SubResource("shape")
 
 [node name="Model" type="Node3D" parent="."]
-
-[node name="Body" type="MeshInstance3D" parent="Model"]
-position = Vector3(0, 0.85, 0)
-mesh = SubResource("mesh_body")
-
-[node name="Hood" type="MeshInstance3D" parent="Model"]
-position = Vector3(0, 1.78, 0.04)
-mesh = SubResource("mesh_hood")
-
-[node name="Face" type="MeshInstance3D" parent="Model"]
-position = Vector3(0, 1.48, -0.3)
-mesh = SubResource("mesh_face")
-
-[node name="Satchel" type="MeshInstance3D" parent="Model"]
-position = Vector3(0.38, 0.95, 0.05)
-mesh = SubResource("mesh_satchel")
+script = ExtResource("2_model")
+model_scene = ExtResource("3_mara")
+hidden_parts = PackedStringArray("Knife", "Knife_Offhand", "1H_Crossbow", "2H_Crossbow", "Throwable")
+tint = Color(0.78, 0.8, 0.74, 1)
