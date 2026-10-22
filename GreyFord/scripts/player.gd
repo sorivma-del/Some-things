@@ -2,11 +2,11 @@ extends CharacterBody3D
 ## Mara: third-person movement relative to the active camera. Ignores input while
 ## GameState.controls_locked is set (dialogue, cutscenes).
 
-@export var walk_speed: float = 3.6
+@export var walk_speed: float = 2.6
 @export var acceleration: float = 14.0
 @export var turn_speed: float = 10.0
 @export var idle_animation: StringName = &"Idle"
-@export var walk_animation: StringName = &"Walking_A"
+@export var walk_animation: StringName = &"Walk"
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 

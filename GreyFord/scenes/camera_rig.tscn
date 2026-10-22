@@ -10,7 +10,7 @@ script = ExtResource("1_rig")
 
 [node name="SpringArm3D" type="SpringArm3D" parent="."]
 shape = SubResource("probe")
-spring_length = 6.0
+spring_length = 4.5
 margin = 0.2
 
 [node name="Camera3D" type="Camera3D" parent="SpringArm3D"]

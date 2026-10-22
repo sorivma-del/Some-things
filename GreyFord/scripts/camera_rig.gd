@@ -4,8 +4,8 @@ extends Node3D
 
 @export var target: Node3D
 @export var follow_speed: float = 6.0
-@export var height: float = 1.4
-@export var distance: float = 6.0
+@export var height: float = 1.5
+@export var distance: float = 4.5
 @export var pitch_degrees: float = -18.0
 @export var yaw_degrees: float = 35.0
 @export var mouse_sensitivity: float = 0.25
