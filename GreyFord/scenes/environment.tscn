@@ -1,0 +1,51 @@
+[gd_scene load_steps=4 format=3]
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
+sky_top_color = Color(0.07, 0.08, 0.13, 1)
+sky_horizon_color = Color(0.33, 0.27, 0.27, 1)
+sky_curve = 0.12
+ground_bottom_color = Color(0.27, 0.27, 0.31, 1)
+ground_horizon_color = Color(0.29, 0.27, 0.3, 1)
+sun_angle_max = 8.0
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 3
+ambient_light_color = Color(0.32, 0.36, 0.48, 1)
+ambient_light_sky_contribution = 0.4
+ambient_light_energy = 0.22
+tonemap_mode = 2
+tonemap_exposure = 1.05
+ssao_enabled = true
+ssao_radius = 1.2
+glow_enabled = true
+glow_intensity = 0.7
+glow_bloom = 0.08
+glow_hdr_threshold = 0.9
+fog_enabled = true
+fog_light_color = Color(0.27, 0.27, 0.31, 1)
+fog_light_energy = 0.8
+fog_density = 0.04
+fog_sky_affect = 0.9
+fog_height = 2.5
+fog_height_density = 0.06
+adjustment_enabled = true
+adjustment_saturation = 0.8
+
+[node name="Environment" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Moonlight" type="DirectionalLight3D" parent="."]
+position = Vector3(0, 20, 0)
+rotation_degrees = Vector3(-28, 145, 0)
+light_color = Color(0.56, 0.66, 0.88, 1)
+light_energy = 0.45
+shadow_enabled = true
+shadow_opacity = 0.85
+directional_shadow_max_distance = 70.0
