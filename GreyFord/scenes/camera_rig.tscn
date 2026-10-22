@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="1_rig"]
+
+[sub_resource type="SphereShape3D" id="probe"]
+radius = 0.3
+
+[node name="CameraRig" type="Node3D"]
+script = ExtResource("1_rig")
+
+[node name="SpringArm3D" type="SpringArm3D" parent="."]
+shape = SubResource("probe")
+spring_length = 6.0
+margin = 0.2
+
+[node name="Camera3D" type="Camera3D" parent="SpringArm3D"]
+current = true
+fov = 60.0
+far = 200.0

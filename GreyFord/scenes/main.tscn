@@ -1,9 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/environment.tscn" id="1_env"]
 [ext_resource type="PackedScene" path="res://scenes/village.tscn" id="2_village"]
 [ext_resource type="PackedScene" path="res://scenes/campfire.tscn" id="3_fire"]
 [ext_resource type="PackedScene" path="res://scenes/gate.tscn" id="4_gate"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="5_player"]
+[ext_resource type="PackedScene" path="res://scenes/camera_rig.tscn" id="6_rig"]
 
 [node name="Main" type="Node3D"]
 
@@ -15,3 +17,9 @@
 
 [node name="Gate" parent="." instance=ExtResource("4_gate")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 22)
+
+[node name="Player" parent="." instance=ExtResource("5_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 3.5)
+
+[node name="CameraRig" parent="." node_paths=PackedStringArray("target") instance=ExtResource("6_rig")]
+target = NodePath("../Player")
