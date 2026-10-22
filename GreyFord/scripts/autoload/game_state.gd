@@ -21,6 +21,13 @@ var gate_open: bool = false:
 			gate_open = value
 			flag_changed.emit(&"gate_open", value)
 
+## Tomash turned down Mara's plea; persuasion cannot be tried again.
+var tomash_refused: bool = false:
+	set(value):
+		if tomash_refused != value:
+			tomash_refused = value
+			flag_changed.emit(&"tomash_refused", value)
+
 var controls_locked: bool:
 	get:
 		return _lock_count > 0

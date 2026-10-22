@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/environment.tscn" id="1_env"]
 [ext_resource type="PackedScene" path="res://scenes/village.tscn" id="2_village"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/camera_rig.tscn" id="6_rig"]
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="7_hud"]
 [ext_resource type="PackedScene" path="res://scenes/helga.tscn" id="8_helga"]
+[ext_resource type="PackedScene" path="res://scenes/tomash.tscn" id="9_tomash"]
 
 [node name="Main" type="Node3D"]
 
@@ -23,6 +24,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 22)
 [node name="Helga" parent="." instance=ExtResource("8_helga")]
 position = Vector3(-2.45, 0, -0.64)
 rotation = Vector3(0, -1.824, 0)
+
+[node name="Tomash" parent="." instance=ExtResource("9_tomash")]
+position = Vector3(2.2, 0, 20.2)
+rotation = Vector3(0, 0.108, 0)
 
 [node name="Player" parent="." instance=ExtResource("5_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 3.5)

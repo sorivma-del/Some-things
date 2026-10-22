@@ -1,0 +1,47 @@
+~ start
+if GameState.gate_open
+	Томаш: Иди. Не оглядывайся.
+	=> END
+if GameState.tomash_refused
+	Томаш: Я сказал: нет. Отойди от ворот.
+	=> choices
+Томаш: Стой. Дальше нельзя.
+Томаш: Ворота закрыты. Приказ старосты.
+=> choices
+
+~ choices
+- Пропусти меня. Мне нужно уйти до ночи. [if not GameState.tomash_refused /] => persuade
+- Я травница. Я знаю эту болезнь. [if GameState.talked_helga /] => medicine
+- Уйти. => END
+
+~ persuade
+Мара: Я здорова. Мне нужно к отшельнику за реку, до темноты.
+$> DialogueRunner.roll_check("persuasion", 12)
+if DialogueRunner.last_check_passed
+	Томаш: ...Здорова, говоришь.
+	Томаш: Ладно. Иди. Пока никто не видит.
+	=> open
+Томаш: Все так говорят. А потом падают у порога.
+Томаш: Нет.
+$> GameState.tomash_refused = true
+if not GameState.talked_helga
+	Мара: Слова его не берут. Может, кто-то в деревне знает, чем его пронять.
+=> END
+
+~ medicine
+Мара: Я видела мор в трёх деревнях. Жар, пятна, сухой кашель.
+Мара: Через ворота он не ходит. Он ходит с блохами и с больными.
+Томаш: Ты... понимаешь в этом?
+$> DialogueRunner.roll_check("medicine", 12)
+if DialogueRunner.last_check_passed
+	Мара: Жги полынь у ворот. Мёртвых голыми руками не трогай. Воду пей только кипячёную.
+	Томаш: Мать так же кашляла. Сухо.
+	Томаш: Иди. Пусть хоть кто-то отсюда выйдет.
+	=> open
+Томаш: Слова. Тут все мудрые.
+Томаш: Не знаю. Отойди. Дай подумать.
+=> END
+
+~ open
+$> GameState.gate_open = true
+=> END

@@ -72,6 +72,9 @@ func _show_line(line: DialogueLine) -> void:
 
 
 func _next(next_id: String) -> void:
+	_clear_responses()
+	_responses.clear()
+	_waiting_for_input = false
 	_show_line(await _resource.get_next_dialogue_line(next_id, _states))
 
 

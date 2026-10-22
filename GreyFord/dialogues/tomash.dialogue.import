@@ -1,0 +1,16 @@
+[remap]
+
+importer="dialogue_manager"
+importer_version=18
+type="Resource"
+uid="uid://c3dmxbnhubu4d"
+path="res://.godot/imported/tomash.dialogue-2bd59fc742925c7ecff0ad9d7f03f890.tres"
+
+[deps]
+
+source_file="res://dialogues/tomash.dialogue"
+dest_files=["res://.godot/imported/tomash.dialogue-2bd59fc742925c7ecff0ad9d7f03f890.tres"]
+
+[params]
+
+defaults=true
