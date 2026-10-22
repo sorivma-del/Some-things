@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/environment.tscn" id="1_env"]
 [ext_resource type="PackedScene" path="res://scenes/village.tscn" id="2_village"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="5_player"]
 [ext_resource type="PackedScene" path="res://scenes/camera_rig.tscn" id="6_rig"]
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="7_hud"]
+[ext_resource type="PackedScene" path="res://scenes/helga.tscn" id="8_helga"]
 
 [node name="Main" type="Node3D"]
 
@@ -18,6 +19,10 @@
 
 [node name="Gate" parent="." instance=ExtResource("4_gate")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 22)
+
+[node name="Helga" parent="." instance=ExtResource("8_helga")]
+position = Vector3(-2.45, 0, -0.64)
+rotation = Vector3(0, -1.824, 0)
 
 [node name="Player" parent="." instance=ExtResource("5_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 3.5)

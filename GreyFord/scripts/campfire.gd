@@ -34,9 +34,9 @@ func _ready() -> void:
 	for flame: MeshInstance3D in _flames:
 		flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
-	# Logs to sit on.
-	Build.cylinder(self, 0.2, 2.2, Vector3(-2.3, 0.2, -0.6), wood, 6, Vector3(90.0, 75.0, 0.0))
-	Build.cylinder(self, 0.2, 2.0, Vector3(1.6, 0.2, -2.0), wood, 6, Vector3(90.0, -35.0, 0.0))
+	# Logs to sit on, lying across the direction to the fire.
+	Build.cylinder(self, 0.2, 2.2, Vector3(-2.3, 0.2, -0.6), wood, 6, Vector3(90.0, -15.0, 0.0))
+	Build.cylinder(self, 0.2, 2.0, Vector3(1.6, 0.2, -2.0), wood, 6, Vector3(90.0, 51.0, 0.0))
 	Build.static_cylinder(self, 0.9, 1.0, Vector3(0.0, 0.5, 0.0))
 
 	_light = OmniLight3D.new()

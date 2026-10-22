@@ -49,6 +49,16 @@ GreyFord/
 Автолоады: `GameState` (флаги, статы, блокировка управления), `DialogueRunner` (запуск
 диалогов, проверки навыков).
 
+## Архитектура
+
+- `GameState` — флаги (`talked_helga`, `gate_open`), статы, счётчик блокировки управления.
+- `DialogueRunner.start_dialogue(resource, cue, speaker)` — открывает `DialogueBalloon`
+  (субтитры без подложки), блокирует управление; сигналы `dialogue_started/finished`.
+- `Interactable` (Area3D, физ. слой 4 «interact») ← `InteractionDetector` у Мары (E).
+  `Inspectable` — объект с коротким диалогом; `npc.gd` — NPC с диалогом и анимацией речи.
+- `CharacterModel` — модульный персонаж Quaternius; `UiStyle` — шрифт и обводка текста
+  (Cormorant Garamond, OFL, `resources/fonts/`).
+
 ## Правила
 
 - Только Godot 4 API. Никаких `yield`, `onready var` без `@`, `KinematicBody` и т.п.

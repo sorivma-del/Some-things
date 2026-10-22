@@ -22,6 +22,8 @@ const BOUNDS := Rect2(-28.0, -31.0, 56.0, 54.0)
 const PALISADE_Z := 22.0
 const GATE_HALF_WIDTH := 2.9
 
+const INSPECT_DIALOGUE: DialogueResource = preload("res://dialogues/inspect.dialogue")
+
 # Position (x, z), whether the windows are lit. Dark houses are marked with a plague cross.
 const HOUSES: Array[Dictionary] = [
 	{"pos": Vector2(-12.0, -6.0), "lit": true},
@@ -89,6 +91,7 @@ func _build_house(pos: Vector2, lit: bool) -> void:
 		var mark := Build.material(COL_PLAGUE_MARK)
 		Build.box(house, Vector3(0.12, 1.2, 0.03), Vector3(0.9, 1.1, d * 0.5 + 0.1), mark, Vector3(0.0, 0.0, 30.0))
 		Build.box(house, Vector3(0.12, 1.2, 0.03), Vector3(0.9, 1.1, d * 0.5 + 0.1), mark, Vector3(0.0, 0.0, -30.0))
+		_add_inspectable(house, Vector3(0.9, 1.0, d * 0.5 + 0.4), "Осмотреть дверь", "plague_house")
 
 
 func _build_church(pos: Vector3) -> void:
@@ -111,6 +114,7 @@ func _build_church(pos: Vector3) -> void:
 	Build.box(church, Vector3(0.7, 0.12, 0.12), Vector3(0.0, 15.7, 7.4), wood)
 	Build.box(church, Vector3(1.0, 1.1, 0.1), Vector3(0.0, 8.4, 9.04), Build.material(COL_WINDOW_DARK))
 	Build.box(church, Vector3(1.5, 2.6, 0.1), Vector3(0.0, 1.3, 9.04), wood)
+	_add_inspectable(church, Vector3(0.0, 1.0, 9.5), "Осмотреть дверь церкви", "church")
 	# Tall windows with faint candle light.
 	var candle := Color(0.95, 0.62, 0.32)
 	var window_mat := Build.material(candle, candle, 1.4)
@@ -176,3 +180,12 @@ func _build_bounds() -> void:
 	Build.static_box(self, Vector3(1.0, 6.0, b.size.y), Vector3(b.position.x, 3.0, centre.y))
 	Build.static_box(self, Vector3(1.0, 6.0, b.size.y), Vector3(b.end.x, 3.0, centre.y))
 	Build.static_box(self, Vector3(b.size.x, 6.0, 1.0), Vector3(centre.x, 3.0, b.position.y))
+
+
+func _add_inspectable(parent: Node3D, pos: Vector3, prompt: String, cue: String) -> void:
+	var inspectable := Inspectable.new()
+	inspectable.prompt = prompt
+	inspectable.dialogue = INSPECT_DIALOGUE
+	inspectable.cue = cue
+	inspectable.position = pos
+	parent.add_child(inspectable)

@@ -1,0 +1,16 @@
+[remap]
+
+importer="dialogue_manager"
+importer_version=18
+type="Resource"
+uid="uid://dt2akwjbx8toe"
+path="res://.godot/imported/inspect.dialogue-0283af190f583dc9f9de401d7af5faf2.tres"
+
+[deps]
+
+source_file="res://dialogues/inspect.dialogue"
+dest_files=["res://.godot/imported/inspect.dialogue-0283af190f583dc9f9de401d7af5faf2.tres"]
+
+[params]
+
+defaults=true

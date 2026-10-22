@@ -1,0 +1,16 @@
+[remap]
+
+importer="dialogue_manager"
+importer_version=18
+type="Resource"
+uid="uid://bc1nqewarxocx"
+path="res://.godot/imported/helga.dialogue-89856c34c216f3a0a84cdae62f9a677f.tres"
+
+[deps]
+
+source_file="res://dialogues/helga.dialogue"
+dest_files=["res://.godot/imported/helga.dialogue-89856c34c216f3a0a84cdae62f9a677f.tres"]
+
+[params]
+
+defaults=true

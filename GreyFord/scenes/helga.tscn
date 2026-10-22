@@ -1,0 +1,44 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/npc.gd" id="1_npc"]
+[ext_resource type="Script" path="res://scripts/character_model.gd" id="2_model"]
+[ext_resource type="Script" path="res://scripts/interactable.gd" id="3_interact"]
+[ext_resource type="Resource" path="res://dialogues/helga.dialogue" id="4_dialogue"]
+[ext_resource type="PackedScene" path="res://resources/models/quaternius/base/Superhero_Female_FullBody.gltf" id="5_body"]
+[ext_resource type="PackedScene" path="res://resources/models/quaternius/outfits/Female_Peasant.gltf" id="6_outfit"]
+[ext_resource type="PackedScene" path="res://resources/models/quaternius/hair/Hair_Buns.gltf" id="7_hair"]
+
+[sub_resource type="CapsuleShape3D" id="shape"]
+radius = 0.35
+height = 1.3
+
+[sub_resource type="SphereShape3D" id="reach"]
+radius = 1.0
+
+[node name="Helga" type="StaticBody3D"]
+script = ExtResource("1_npc")
+dialogue = ExtResource("4_dialogue")
+idle_animation = &"Sitting_Idle"
+talk_animation = &"Sitting_Talking"
+face_player = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.65, 0)
+shape = SubResource("shape")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("2_model")
+base_scene = ExtResource("5_body")
+parts = Array[PackedScene]([ExtResource("6_outfit"), ExtResource("7_hair")])
+head_only_parts = PackedStringArray("Superhero_Female")
+model_scale = 0.95
+tint = Color(0.72, 0.7, 0.68, 1)
+default_animation = &"Sitting_Idle"
+
+[node name="Interactable" type="Area3D" parent="."]
+position = Vector3(0, 0.8, 0)
+script = ExtResource("3_interact")
+prompt = "Поговорить с Хельгой"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Interactable"]
+shape = SubResource("reach")
