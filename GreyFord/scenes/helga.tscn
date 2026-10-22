@@ -4,9 +4,9 @@
 [ext_resource type="Script" path="res://scripts/character_model.gd" id="2_model"]
 [ext_resource type="Script" path="res://scripts/interactable.gd" id="3_interact"]
 [ext_resource type="Resource" path="res://dialogues/helga.dialogue" id="4_dialogue"]
-[ext_resource type="PackedScene" path="res://resources/models/quaternius/base/Superhero_Female_FullBody.gltf" id="5_body"]
-[ext_resource type="PackedScene" path="res://resources/models/quaternius/outfits/Female_Peasant.gltf" id="6_outfit"]
-[ext_resource type="PackedScene" path="res://resources/models/quaternius/hair/Hair_Buns.gltf" id="7_hair"]
+[ext_resource type="PackedScene" path="res://resources/models/characters/base/Superhero_Female_FullBody.gltf" id="5_body"]
+[ext_resource type="PackedScene" path="res://resources/models/characters/outfits/Female_Peasant.gltf" id="6_outfit"]
+[ext_resource type="PackedScene" path="res://resources/models/characters/hair/Hair_Buns.gltf" id="7_hair"]
 
 [sub_resource type="CapsuleShape3D" id="shape"]
 radius = 0.35

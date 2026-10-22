@@ -3,6 +3,7 @@ extends RefCounted
 ## Helpers for assembling placeholder geometry out of primitives in code.
 
 const FLAT_SHADER: Shader = preload("res://resources/flat.gdshader")
+const BARK: Texture2D = preload("res://resources/models/nature/Bark_NormalTree.png")
 
 static var _material_cache: Dictionary[String, ShaderMaterial] = {}
 
@@ -18,6 +19,18 @@ static func material(color: Color, glow: Color = Color.BLACK, glow_energy: float
 	mat.set_shader_parameter(&"emission", glow)
 	mat.set_shader_parameter(&"emission_energy", glow_energy)
 	_material_cache[key] = mat
+	return mat
+
+
+## Rough wood for palisade and gate, mapped in world space so primitives need no UVs.
+static func bark_material(tint: Color) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_texture = BARK
+	mat.albedo_color = tint
+	mat.uv1_triplanar = true
+	mat.uv1_world_triplanar = true
+	mat.uv1_scale = Vector3(0.6, 0.6, 0.6)
+	mat.roughness = 1.0
 	return mat
 
 

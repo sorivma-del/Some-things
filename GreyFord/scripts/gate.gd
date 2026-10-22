@@ -15,8 +15,8 @@ var _is_open: bool = false
 
 
 func _ready() -> void:
-	var wood := Build.material(Color(0.24, 0.16, 0.1))
-	var dark := Build.material(Color(0.12, 0.09, 0.07))
+	var wood := Build.bark_material(Color(0.5, 0.42, 0.36))
+	var dark := Build.bark_material(Color(0.26, 0.21, 0.18))
 	for side: float in [-1.0, 1.0]:
 		var x := side * (DOOR_WIDTH + 0.25)
 		Build.box(self, Vector3(0.5, 4.8, 0.5), Vector3(x, 2.4, 0.0), wood)

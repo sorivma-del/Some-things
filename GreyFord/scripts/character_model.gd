@@ -5,8 +5,8 @@ extends Node3D
 ## All parts share the same 65-bone humanoid rig, so meshes and clips transfer by bone name.
 
 const ANIMATION_LIBRARIES: Array[PackedScene] = [
-	preload("res://resources/models/quaternius/anim/UAL1_Standard.glb"),
-	preload("res://resources/models/quaternius/anim/UAL2_Standard.glb"),
+	preload("res://resources/models/characters/anim/UAL1_Standard.glb"),
+	preload("res://resources/models/characters/anim/UAL2_Standard.glb"),
 ]
 
 ## One clip namespace shared by every character, built once from ANIMATION_LIBRARIES.

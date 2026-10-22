@@ -9,10 +9,11 @@ Godot **4.6+** (не 3.x), GDScript со строгой типизацией. П
 Героиня — Мара, странствующая травница. Цель среза: убедить стражника у ворот открыть их
 до наступления ночи.
 
-- **Локация:** одна деревня — 4–5 домов, церковь, костёр в центре, лес по краям, запертые
-  ворота. Пока плейсхолдеры из примитивов (Box, Cylinder, Cone), low-poly, flat shading;
-  замена на готовые модели — в шаге полировки.
-- **Персонажи:** модульные модели Quaternius (CC0, `resources/models/quaternius/`, источники
+- **Локация:** одна деревня — 5 домов, церковь с колокольней, костёр в центре, лес по краям,
+  частокол и запертые ворота. Дома и церковь собираются `KitBuilder` из модулей Medieval
+  Village MegaKit, лес и трава — Stylized Nature MegaKit (Quaternius, CC0), земля —
+  `Terrain` (рельеф кодом, текстуры Poly Haven CC0). Костёр, частокол, ворота — примитивы.
+- **Персонажи:** модульные модели Quaternius (CC0, `resources/models/characters/`, источники
   в `SOURCES.md`). `CharacterModel` собирает тело + наряд + причёску на общий скелет,
   обрезает базовое тело до головы, берёт анимации из UAL1/UAL2 (`Idle`, `Walk`,
   `Idle_Talking`, `Sitting_Idle`, `Idle_FoldArms`, `Idle_Torch`, ...).
@@ -56,6 +57,8 @@ GreyFord/
   (субтитры без подложки), блокирует управление; сигналы `dialogue_started/finished`.
 - `Interactable` (Area3D, физ. слой 4 «interact») ← `InteractionDetector` у Мары (E).
   `Inspectable` — объект с коротким диалогом; `npc.gd` — NPC с диалогом и анимацией речи.
+- `Terrain` — рельеф, коллизия HeightMapShape3D, `height_at()` для расстановки;
+  `KitBuilder` — дома/церковь из модулей (сетка 2 м, фасад смотрит в +Z).
 - `CharacterModel` — модульный персонаж Quaternius; `UiStyle` — шрифт и обводка текста
   (Cormorant Garamond, OFL, `resources/fonts/`).
 

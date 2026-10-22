@@ -1,185 +1,230 @@
 extends Node3D
-## Builds the village of Grey Ford out of primitives: ground, houses, church,
-## palisade, forest and invisible bounds. The campfire and gate are separate scenes.
+## Builds Grey Ford: terrain, houses and church from the Medieval Village MegaKit, a
+## palisade, the forest and undergrowth from the Stylized Nature MegaKit, and invisible
+## bounds. The campfire and the gate are separate scenes.
 
-const COL_GROUND := Color(0.15, 0.14, 0.11)
-const COL_ROAD := Color(0.23, 0.2, 0.16)
-const COL_WALL := Color(0.36, 0.32, 0.27)
-const COL_WALL_DARK := Color(0.27, 0.25, 0.23)
-const COL_ROOF := Color(0.24, 0.18, 0.13)
-const COL_THATCH := Color(0.33, 0.28, 0.18)
-const COL_WOOD := Color(0.22, 0.15, 0.1)
-const COL_STONE := Color(0.33, 0.33, 0.34)
-const COL_PLAGUE_MARK := Color(0.42, 0.08, 0.06)
-const COL_WINDOW_DARK := Color(0.05, 0.05, 0.06)
-const COL_WINDOW_LIT := Color(1.0, 0.58, 0.24)
-const COL_TRUNK := Color(0.18, 0.13, 0.1)
-const COL_PINE := Color(0.12, 0.19, 0.14)
-
-const FOREST_SEED := 1347
-const CLEARING := Rect2(-22.0, -27.0, 44.0, 47.0)  # x, z, width, depth: no trees inside
-const BOUNDS := Rect2(-28.0, -31.0, 56.0, 54.0)
-const PALISADE_Z := 22.0
-const GATE_HALF_WIDTH := 2.9
-
+const NATURE := "res://resources/models/nature/"
 const INSPECT_DIALOGUE: DialogueResource = preload("res://dialogues/inspect.dialogue")
 
-# Position (x, z), whether the windows are lit. Dark houses are marked with a plague cross.
+const SEED := 1347
+const CLEARING := Rect2(-22.0, -31.0, 44.0, 51.0)  # x, z, width, depth: no trees inside
+const BOUNDS := Rect2(-28.0, -33.0, 56.0, 56.0)
+const PALISADE_Z := 22.0
+const GATE_HALF_WIDTH := 2.9
+const CHURCH_POS := Vector2(0.0, -19.0)
+const DRY_GRASS := Color(0.5, 0.48, 0.34)
+
+# Position (x, z), modules deep, lit windows. Dark houses are plague houses.
 const HOUSES: Array[Dictionary] = [
-	{"pos": Vector2(-12.0, -6.0), "lit": true},
-	{"pos": Vector2(12.5, -5.0), "lit": false},
-	{"pos": Vector2(-13.0, 8.5), "lit": false},
-	{"pos": Vector2(13.0, 9.0), "lit": true},
-	{"pos": Vector2(-9.5, -16.0), "lit": true},
+	{"pos": Vector2(-12.0, -6.0), "depth": 3, "lit": true},
+	{"pos": Vector2(12.5, -5.0), "depth": 4, "lit": false},
+	{"pos": Vector2(-13.0, 8.5), "depth": 3, "lit": false},
+	{"pos": Vector2(13.0, 9.0), "depth": 4, "lit": true},
+	{"pos": Vector2(-10.5, -17.5), "depth": 3, "lit": true},
 ]
+
+var _terrain: Terrain
+var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
-	_build_ground()
+	_rng.seed = SEED
+	_build_terrain()
 	for house: Dictionary in HOUSES:
-		_build_house(house["pos"], house["lit"])
-	_build_church(Vector3(0.0, 0.0, -20.0))
+		_build_house(house["pos"], house["depth"], house["lit"])
+	_build_church()
+	_build_props()
 	_build_palisade()
 	_build_forest()
+	_scatter_undergrowth()
 	_build_bounds()
 
 
-func _build_ground() -> void:
-	Build.box(self, Vector3(300.0, 0.2, 300.0), Vector3(0.0, -0.1, 0.0), Build.material(COL_GROUND))
-	Build.static_box(self, Vector3(300.0, 0.2, 300.0), Vector3(0.0, -0.1, 0.0))
-	# Trampled earth: around the fire and the road to the gate.
-	Build.cylinder(self, 4.5, 0.02, Vector3(0.0, 0.01, 0.0), Build.material(COL_ROAD), 9)
-	Build.box(self, Vector3(3.2, 0.02, 20.0), Vector3(0.0, 0.012, 13.0), Build.material(COL_ROAD))
-	Build.box(self, Vector3(3.0, 0.02, 12.0), Vector3(0.0, 0.012, -9.0), Build.material(COL_ROAD))
+func _build_terrain() -> void:
+	_terrain = Terrain.new()
+	_terrain.flat_spots.append(Vector3(0.0, 0.0, 5.0))  # Campfire.
+	_terrain.flat_spots.append(Vector3(CHURCH_POS.x, CHURCH_POS.y - 2.0, 11.0))
+	_terrain.flat_spots.append(Vector3(0.0, PALISADE_Z, 5.0))
+	_terrain.paths.append([Vector2(0.0, 3.0), Vector2(0.0, PALISADE_Z + 40.0), 1.8])
+	_terrain.paths.append([Vector2(0.0, -3.0), Vector2(CHURCH_POS.x, CHURCH_POS.y + 6.5), 1.5])
+	for house: Dictionary in HOUSES:
+		var p: Vector2 = house["pos"]
+		_terrain.flat_spots.append(Vector3(p.x, p.y, 5.0 + house["depth"]))
+		_terrain.paths.append([p.move_toward(Vector2.ZERO, 3.0), p.move_toward(Vector2.ZERO, p.length() - 4.0), 1.0])
+	add_child(_terrain)
+	_terrain.build()
 
 
-func _build_house(pos: Vector2, lit: bool) -> void:
-	var house := Node3D.new()
-	house.name = "House"
+func _build_house(pos: Vector2, depth: int, lit: bool) -> void:
+	var house := KitBuilder.house(self, depth, lit)
 	house.position = Vector3(pos.x, 0.0, pos.y)
 	# Front door faces the campfire in the village centre.
 	house.rotation.y = atan2(-pos.x, -pos.y)
-	add_child(house)
-
-	var w := 5.0
-	var h := 3.0
-	var d := 4.0
-	var wall := Build.material(COL_WALL if lit else COL_WALL_DARK)
-	Build.box(house, Vector3(w, h, d), Vector3(0.0, h * 0.5, 0.0), wall)
-	Build.prism(house, Vector3(w + 0.7, 1.9, d + 0.7), Vector3(0.0, h + 0.95, 0.0), Build.material(COL_THATCH))
-	Build.box(house, Vector3(0.6, 1.4, 0.6), Vector3(1.4, h + 1.4, -0.6), Build.material(COL_STONE))
-	Build.box(house, Vector3(1.0, 1.9, 0.1), Vector3(0.9, 0.95, d * 0.5 + 0.04), Build.material(COL_WOOD))
-	Build.static_box(house, Vector3(w, h, d), Vector3(0.0, h * 0.5, 0.0))
-
-	var window_mat := Build.material(COL_WINDOW_LIT, COL_WINDOW_LIT, 3.0) if lit else Build.material(COL_WINDOW_DARK)
-	Build.box(house, Vector3(0.8, 0.7, 0.08), Vector3(-1.2, 1.7, d * 0.5 + 0.03), window_mat)
-	Build.box(house, Vector3(0.08, 0.7, 0.8), Vector3(w * 0.5 + 0.03, 1.7, 0.0), window_mat)
-	Build.box(house, Vector3(0.08, 0.7, 0.8), Vector3(-w * 0.5 - 0.03, 1.7, 0.0), window_mat)
-
+	var front := depth * KitBuilder.MODULE * 0.5
 	if lit:
 		var glow := OmniLight3D.new()
-		glow.light_color = COL_WINDOW_LIT
-		glow.light_energy = 0.9
-		glow.omni_range = 4.5
-		glow.position = Vector3(-1.2, 1.7, d * 0.5 + 0.7)
+		glow.light_color = KitBuilder.WINDOW_GLOW
+		glow.light_energy = 1.2
+		glow.omni_range = 5.5
+		glow.position = Vector3(0.0, 1.8, front + 1.2)
 		house.add_child(glow)
 	else:
-		# Boarded window and a painted cross on the door: plague house.
-		var boards := Build.material(COL_WOOD)
-		Build.box(house, Vector3(1.0, 0.12, 0.06), Vector3(-1.2, 1.85, d * 0.5 + 0.09), boards, Vector3(0.0, 0.0, 12.0))
-		Build.box(house, Vector3(1.0, 0.12, 0.06), Vector3(-1.2, 1.55, d * 0.5 + 0.09), boards, Vector3(0.0, 0.0, -9.0))
-		var mark := Build.material(COL_PLAGUE_MARK)
-		Build.box(house, Vector3(0.12, 1.2, 0.03), Vector3(0.9, 1.1, d * 0.5 + 0.1), mark, Vector3(0.0, 0.0, 30.0))
-		Build.box(house, Vector3(0.12, 1.2, 0.03), Vector3(0.9, 1.1, d * 0.5 + 0.1), mark, Vector3(0.0, 0.0, -30.0))
-		_add_inspectable(house, Vector3(0.9, 1.0, d * 0.5 + 0.4), "Осмотреть дверь", "plague_house")
+		_add_inspectable(house, Vector3(0.0, 1.0, front + 0.5), "Осмотреть дверь", "plague_house")
 
 
-func _build_church(pos: Vector3) -> void:
-	var church := Node3D.new()
-	church.name = "Church"
-	church.position = pos
-	add_child(church)
-	var stone := Build.material(COL_STONE)
+func _build_church() -> void:
+	var church := KitBuilder.church(self)
+	church.position = Vector3(CHURCH_POS.x, 0.0, CHURCH_POS.y)
+	_add_inspectable(church, Vector3(0.0, 1.0, 6.6), "Осмотреть дверь церкви", "church")
+	var candle := OmniLight3D.new()
+	candle.light_color = KitBuilder.CANDLE_GLOW
+	candle.light_energy = 0.8
+	candle.omni_range = 5.0
+	candle.position = Vector3(0.0, 2.0, 7.2)
+	church.add_child(candle)
 
-	# Nave.
-	Build.box(church, Vector3(7.0, 6.0, 12.0), Vector3(0.0, 3.0, 0.0), stone)
-	Build.prism(church, Vector3(7.8, 3.4, 12.6), Vector3(0.0, 7.7, 0.0), Build.material(COL_ROOF))
-	Build.static_box(church, Vector3(7.0, 6.0, 12.0), Vector3(0.0, 3.0, 0.0))
-	# Bell tower in front, with a four-sided spire and a cross.
-	Build.box(church, Vector3(3.2, 10.0, 3.2), Vector3(0.0, 5.0, 7.4), stone)
-	Build.static_box(church, Vector3(3.2, 10.0, 3.2), Vector3(0.0, 5.0, 7.4))
-	Build.cone(church, 2.4, 5.0, Vector3(0.0, 12.5, 7.4), Build.material(COL_ROOF), 4, Vector3(0.0, 45.0, 0.0))
-	var wood := Build.material(COL_WOOD)
-	Build.box(church, Vector3(0.12, 1.2, 0.12), Vector3(0.0, 15.5, 7.4), wood)
-	Build.box(church, Vector3(0.7, 0.12, 0.12), Vector3(0.0, 15.7, 7.4), wood)
-	Build.box(church, Vector3(1.0, 1.1, 0.1), Vector3(0.0, 8.4, 9.04), Build.material(COL_WINDOW_DARK))
-	Build.box(church, Vector3(1.5, 2.6, 0.1), Vector3(0.0, 1.3, 9.04), wood)
-	_add_inspectable(church, Vector3(0.0, 1.0, 9.5), "Осмотреть дверь церкви", "church")
-	# Tall windows with faint candle light.
-	var candle := Color(0.95, 0.62, 0.32)
-	var window_mat := Build.material(candle, candle, 1.4)
-	for z: float in [-3.5, 0.0, 3.5]:
-		Build.box(church, Vector3(0.08, 2.0, 0.7), Vector3(3.53, 3.2, z), window_mat)
-		Build.box(church, Vector3(0.08, 2.0, 0.7), Vector3(-3.53, 3.2, z), window_mat)
+
+func _build_props() -> void:
+	# A cart left by the lit house on the right, crates and a broken fence at a plague house.
+	var cart := KitBuilder.piece(self, "Prop_Wagon", Vector3(8.6, 0.0, 13.2), 200.0)
+	Build.static_box(cart, Vector3(1.9, 1.5, 4.0), Vector3(0.0, 0.75, -1.15))
+	for p: Vector3 in [Vector3(16.6, 0.0, 4.4), Vector3(17.4, 0.0, 5.3), Vector3(16.9, 1.06, 4.8)]:
+		var crate := KitBuilder.piece(self, "Prop_Crate", p, _rng.randf_range(0.0, 90.0))
+		if p.y == 0.0:
+			Build.static_box(crate, Vector3(1.08, 1.06, 1.08), Vector3(0.0, 0.53, 0.0))
+	for i: int in 3:
+		KitBuilder.piece(self, "Prop_WoodenFence_Single", Vector3(-17.5 + i * 2.05, 0.0, 13.6), 8.0 * i)
 
 
 func _build_palisade() -> void:
-	var stake := Build.material(COL_WOOD)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = FOREST_SEED + 1
-	var x := -BOUNDS.size.x * 0.5
-	while x <= BOUNDS.size.x * 0.5:
+	var wood := Build.bark_material(Color(0.55, 0.48, 0.42))
+	var x := BOUNDS.position.x
+	while x <= BOUNDS.end.x:
 		if absf(x) > GATE_HALF_WIDTH:
-			var h := rng.randf_range(3.2, 3.9)
-			Build.cylinder(self, 0.24, h, Vector3(x, h * 0.5, PALISADE_Z), stake, 6)
-			Build.cone(self, 0.24, 0.5, Vector3(x, h + 0.25, PALISADE_Z), stake, 6)
+			var h := _rng.randf_range(3.2, 3.9)
+			var y := _terrain.height_at(x, PALISADE_Z) - 0.3
+			var stake := Build.cylinder(self, 0.24, h, Vector3(x, y + h * 0.5, PALISADE_Z), wood, 7)
+			stake.rotation_degrees = Vector3(_rng.randf_range(-3.0, 3.0), _rng.randf() * 360.0, _rng.randf_range(-3.0, 3.0))
+			Build.cone(self, 0.24, 0.5, Vector3(x, y + h + 0.25, PALISADE_Z), wood, 7)
 		x += 0.5
 	var half := BOUNDS.size.x * 0.5
 	var side_len := half - GATE_HALF_WIDTH
 	var side_centre := GATE_HALF_WIDTH + side_len * 0.5
-	Build.static_box(self, Vector3(side_len, 4.0, 0.6), Vector3(-side_centre, 2.0, PALISADE_Z))
-	Build.static_box(self, Vector3(side_len, 4.0, 0.6), Vector3(side_centre, 2.0, PALISADE_Z))
+	Build.static_box(self, Vector3(side_len, 6.0, 0.6), Vector3(-side_centre, 2.0, PALISADE_Z))
+	Build.static_box(self, Vector3(side_len, 6.0, 0.6), Vector3(side_centre, 2.0, PALISADE_Z))
 
 
 func _build_forest() -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = FOREST_SEED
 	var placed := 0
 	var attempts := 0
-	while placed < 230 and attempts < 4000:
+	while placed < 170 and attempts < 5000:
 		attempts += 1
-		var p := Vector2(rng.randf_range(-48.0, 48.0), rng.randf_range(-50.0, 48.0))
+		var p := Vector2(_rng.randf_range(-60.0, 60.0), _rng.randf_range(-62.0, 62.0))
 		if CLEARING.has_point(p):
 			continue
-		if absf(p.x) < 4.0 and p.y > PALISADE_Z - 2.0:
+		if absf(p.x) < 4.5 and p.y > PALISADE_Z - 2.0:
 			continue  # Road out of the gate.
-		if absf(p.y - PALISADE_Z) < 1.2:
+		if absf(p.y - PALISADE_Z) < 2.0 and absf(p.x) < BOUNDS.end.x + 1.0:
 			continue  # Keep trees out of the palisade.
-		_build_tree(Vector3(p.x, 0.0, p.y), rng.randf_range(0.8, 1.5), rng.randf())
+		var dead := _rng.randf() < 0.22
+		var model := "DeadTree_%d" % _rng.randi_range(1, 5) if dead else "Pine_%d" % _rng.randi_range(1, 5)
+		var tree := _nature(model, p, _rng.randf_range(0.75, 1.25) * (0.8 if dead else 1.0))
+		if BOUNDS.grow(2.0).has_point(p):
+			Build.static_cylinder(tree, 0.35, 3.0, Vector3(0.0, 1.5, 0.0))
 		placed += 1
 
 
-func _build_tree(pos: Vector3, s: float, shade: float) -> void:
-	var tree := Node3D.new()
-	tree.position = pos
-	tree.rotation.y = shade * TAU
-	tree.scale = Vector3.ONE * s
-	add_child(tree)
-	Build.cylinder(tree, 0.22, 1.8, Vector3(0.0, 0.9, 0.0), Build.material(COL_TRUNK), 5)
-	var needles := Build.material(COL_PINE.lerp(Color(0.16, 0.18, 0.13), shade))
-	Build.cone(tree, 1.7, 2.2, Vector3(0.0, 2.0, 0.0), needles, 6)
-	Build.cone(tree, 1.3, 2.0, Vector3(0.0, 3.1, 0.0), needles, 6)
-	Build.cone(tree, 0.9, 1.8, Vector3(0.0, 4.1, 0.0), needles, 6)
-	if BOUNDS.grow(1.0).has_point(Vector2(pos.x, pos.z)):
-		Build.static_cylinder(tree, 0.3, 2.0, Vector3(0.0, 1.0, 0.0))
+## Grass, ferns, bushes, rocks and mushrooms. Grass is drawn with MultiMesh.
+func _scatter_undergrowth() -> void:
+	var grass_meshes: Array[Mesh] = [
+		_nature_mesh("Grass_Common_Short"), _nature_mesh("Grass_Common_Tall"),
+		_nature_mesh("Grass_Wispy_Short"), _nature_mesh("Grass_Wispy_Tall"),
+	]
+	# Index 0, 2: short kinds for the trampled village; 1, 3: tall kinds toward the forest.
+	var grass: Array[Array] = [[], [], [], []]
+	for i: int in 9000:
+		var p := Vector2(_rng.randf_range(-45.0, 45.0), _rng.randf_range(-45.0, 45.0))
+		var wild := _terrain.forest_weight(p.x, p.y)
+		if _rng.randf() > _terrain.grass_weight(p.x, p.y) * lerpf(0.3, 1.0, wild) or _blocked(p):
+			continue
+		var kind: int = _rng.randi_range(0, 3) if wild > 0.5 else _rng.randi_range(0, 1) * 2
+		var size := _rng.randf_range(0.3, 0.55) if wild < 0.5 else _rng.randf_range(0.45, 0.85)
+		var t := Transform3D(Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3.ONE * size),
+				Vector3(p.x, _terrain.height_at(p.x, p.y), p.y))
+		grass[kind].append(t)
+	for k: int in grass_meshes.size():
+		_multimesh(grass_meshes[k], grass[k])
+
+	for i: int in 160:
+		var p := Vector2(_rng.randf_range(-40.0, 40.0), _rng.randf_range(-40.0, 40.0))
+		if _blocked(p) or _terrain.forest_weight(p.x, p.y) < 0.35:
+			continue
+		var roll := _rng.randf()
+		if roll < 0.35:
+			_nature("Fern_1", p, _rng.randf_range(0.25, 0.4))
+		elif roll < 0.65:
+			_nature("Bush_Common", p, _rng.randf_range(0.7, 1.2))
+		elif roll < 0.8:
+			_nature("Rock_Medium_%d" % _rng.randi_range(1, 3), p, _rng.randf_range(0.4, 0.9))
+		else:
+			_nature("Mushroom_Common", p, _rng.randf_range(0.8, 1.4))
+	for i: int in 40:
+		var p := Vector2(_rng.randf_range(-20.0, 20.0), _rng.randf_range(-24.0, 20.0))
+		if not _blocked(p):
+			_nature("Pebble_Round_%d" % _rng.randi_range(1, 3), p, _rng.randf_range(0.8, 1.6))
 
 
 func _build_bounds() -> void:
 	var b := BOUNDS
 	var centre := b.get_center()
-	Build.static_box(self, Vector3(1.0, 6.0, b.size.y), Vector3(b.position.x, 3.0, centre.y))
-	Build.static_box(self, Vector3(1.0, 6.0, b.size.y), Vector3(b.end.x, 3.0, centre.y))
-	Build.static_box(self, Vector3(b.size.x, 6.0, 1.0), Vector3(centre.x, 3.0, b.position.y))
+	Build.static_box(self, Vector3(1.0, 12.0, b.size.y), Vector3(b.position.x, 3.0, centre.y))
+	Build.static_box(self, Vector3(1.0, 12.0, b.size.y), Vector3(b.end.x, 3.0, centre.y))
+	Build.static_box(self, Vector3(b.size.x, 12.0, 1.0), Vector3(centre.x, 3.0, b.position.y))
+
+
+## True where undergrowth must not grow: buildings, the fire, the road, the palisade.
+func _blocked(p: Vector2) -> bool:
+	if p.length() < 4.0 or absf(p.y - PALISADE_Z) < 1.0:
+		return true
+	if absf(p.x) < 4.0 and absf(p.y - CHURCH_POS.y + 3.0) < 11.0:
+		return true
+	for house: Dictionary in HOUSES:
+		if p.distance_to(house["pos"]) < 3.5 + house["depth"]:
+			return true
+	return false
+
+
+func _nature(model: String, p: Vector2, scale_factor: float) -> Node3D:
+	var node := KitBuilder.instance_of(NATURE + model + ".gltf")
+	node.position = Vector3(p.x, _terrain.height_at(p.x, p.y) - 0.1, p.y)
+	node.rotation.y = _rng.randf() * TAU
+	node.scale = Vector3.ONE * scale_factor
+	add_child(node)
+	return node
+
+
+func _nature_mesh(model: String) -> Mesh:
+	var scene := KitBuilder.instance_of(NATURE + model + ".gltf")
+	var mesh := (scene.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).mesh
+	scene.free()
+	# Late-autumn grass: dry and yellowed rather than the kit's fresh green.
+	var mat := mesh.surface_get_material(0) as StandardMaterial3D
+	if mat:
+		mat.albedo_color = DRY_GRASS
+	return mesh
+
+
+func _multimesh(mesh: Mesh, transforms: Array) -> void:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = transforms.size()
+	for i: int in transforms.size():
+		mm.set_instance_transform(i, transforms[i])
+	var instance := MultiMeshInstance3D.new()
+	instance.multimesh = mm
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(instance)
 
 
 func _add_inspectable(parent: Node3D, pos: Vector3, prompt: String, cue: String) -> void:
