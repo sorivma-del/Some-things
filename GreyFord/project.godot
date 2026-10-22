@@ -1,0 +1,31 @@
+; Engine configuration file.
+; Edited as text: no manual editor work in this project.
+
+config_version=5
+
+[application]
+
+config/name="Серый Брод"
+config/description="Вертикальный срез: чумная деревня, сумерки."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+
+[autoload]
+
+GameState="*res://scripts/autoload/game_state.gd"
+DialogueRunner="*res://scripts/autoload/dialogue_runner.gd"
+
+[debug]
+
+gdscript/warnings/untyped_declaration=2
+gdscript/warnings/exclude_addons=true
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+
+[rendering]
+
+anti_aliasing/quality/msaa_3d=2
