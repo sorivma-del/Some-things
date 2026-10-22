@@ -25,7 +25,7 @@ void fragment() {
 	float mud = COLOR.r;
 	float forest = COLOR.g * (1.0 - mud);
 	float grass = clamp(1.0 - mud - forest, 0.0, 1.0);
-	vec3 albedo = texture(mud_albedo, uv).rgb * mud
+	vec3 albedo = texture(mud_albedo, uv).rgb * 0.72 * mud
 		+ texture(grass_albedo, uv * 0.8).rgb * grass
 		+ texture(forest_albedo, uv * 0.9).rgb * forest;
 	vec3 normal = texture(mud_normal, uv).rgb * mud

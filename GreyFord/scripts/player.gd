@@ -10,12 +10,23 @@ signal arrived
 @export var turn_speed: float = 10.0
 @export var idle_animation: StringName = &"Idle"
 @export var walk_animation: StringName = &"Walk"
+@export var step_interval: float = 0.42
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _walk_target: Vector3
 var _walking_to: bool = false
+var _step_time: float = 0.0
+var _steps := AudioStreamPlayer3D.new()
+var _step_sounds: Array[AudioStreamWAV] = []
 
 @onready var _model: CharacterModel = $Model
+
+
+func _ready() -> void:
+	_steps.volume_db = -10.0
+	add_child(_steps)
+	for variant: int in 3:
+		_step_sounds.append(ProceduralSound.footstep(variant))
 
 
 func _physics_process(delta: float) -> void:
@@ -40,7 +51,14 @@ func _physics_process(delta: float) -> void:
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 	move_and_slide()
-	_model.play(walk_animation if horizontal.length() > 0.4 else idle_animation)
+	var moving := horizontal.length() > 0.4
+	_model.play(walk_animation if moving else idle_animation)
+	_step_time = _step_time + delta if moving else step_interval * 0.6
+	if _step_time >= step_interval:
+		_step_time = 0.0
+		_steps.stream = _step_sounds.pick_random()
+		_steps.pitch_scale = randf_range(0.85, 1.1)
+		_steps.play()
 
 	if direction.length_squared() > 0.001:
 		var target_yaw := atan2(-direction.x, -direction.z)

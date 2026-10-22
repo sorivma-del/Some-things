@@ -13,6 +13,7 @@ const PALISADE_Z := 22.0
 const GATE_HALF_WIDTH := 2.9
 const CHURCH_POS := Vector2(0.0, -19.0)
 const DRY_GRASS := Color(0.5, 0.48, 0.34)
+const GRASS_SHADER: Shader = preload("res://resources/grass_wind.gdshader")
 
 # Position (x, z), modules deep, lit windows. Dark houses are plague houses.
 const HOUSES: Array[Dictionary] = [
@@ -38,6 +39,7 @@ func _ready() -> void:
 	_build_forest()
 	_scatter_undergrowth()
 	_build_bounds()
+	_build_atmosphere()
 
 
 func _build_terrain() -> void:
@@ -62,6 +64,7 @@ func _build_house(pos: Vector2, depth: int, lit: bool) -> void:
 	house.rotation.y = atan2(-pos.x, -pos.y)
 	var front := depth * KitBuilder.MODULE * 0.5
 	if lit:
+		Effects.smoke(house, Vector3(1.6, 7.7, -front + 1.5))
 		var glow := OmniLight3D.new()
 		glow.light_color = KitBuilder.WINDOW_GLOW
 		glow.light_energy = 1.2
@@ -131,6 +134,8 @@ func _build_forest() -> void:
 		var tree := _nature(model, p, _rng.randf_range(0.75, 1.25) * (0.8 if dead else 1.0))
 		if BOUNDS.grow(2.0).has_point(p):
 			Build.static_cylinder(tree, 0.35, 3.0, Vector3(0.0, 1.5, 0.0))
+		elif not BOUNDS.grow(12.0).has_point(p):
+			_set_shadows(tree, false)  # Deep forest: hidden in fog, skip shadow cost.
 		placed += 1
 
 
@@ -182,6 +187,25 @@ func _build_bounds() -> void:
 	Build.static_box(self, Vector3(b.size.x, 12.0, 1.0), Vector3(centre.x, 3.0, b.position.y))
 
 
+## Wind ambience and low mist drifting in from the forest edge.
+func _build_atmosphere() -> void:
+	var wind := AudioStreamPlayer.new()
+	wind.stream = ProceduralSound.wind()
+	wind.volume_db = -16.0
+	add_child(wind)
+	ProceduralSound.play_soon(wind)
+	Effects.ground_mist(self, Vector3(0.0, 0.8, -2.0), Vector3(24.0, 0.4, 24.0), 45)
+	Effects.ground_mist(self, Vector3(0.0, 1.5, 34.0), Vector3(30.0, 0.6, 8.0), 25)
+
+
+func _set_shadows(node: Node, enabled: bool) -> void:
+	var geometry := node as GeometryInstance3D
+	if geometry:
+		geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if enabled else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for child: Node in node.get_children():
+		_set_shadows(child, enabled)
+
+
 ## True where undergrowth must not grow: buildings, the fire, the road, the palisade.
 func _blocked(p: Vector2) -> bool:
 	if p.length() < 4.0 or absf(p.y - PALISADE_Z) < 1.0:
@@ -224,6 +248,14 @@ func _multimesh(mesh: Mesh, transforms: Array) -> void:
 	var instance := MultiMeshInstance3D.new()
 	instance.multimesh = mm
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Swap the kit material for one that sways in the wind, keeping its texture.
+	var source := mesh.surface_get_material(0) as StandardMaterial3D
+	if source:
+		var sway := ShaderMaterial.new()
+		sway.shader = GRASS_SHADER
+		sway.set_shader_parameter(&"albedo_texture", source.albedo_texture)
+		sway.set_shader_parameter(&"albedo", DRY_GRASS)
+		instance.material_override = sway
 	add_child(instance)
 
 

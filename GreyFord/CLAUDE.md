@@ -68,6 +68,8 @@ GreyFord/
   `KitBuilder` — дома/церковь из модулей (сетка 2 м, фасад смотрит в +Z).
 - `CutsceneDirector` (узел в main) — вступление (пропуск E/Esc) и финал по флагу
   `gate_open`; своя камера и оверлей. `godot -- --skip-intro` начинает сразу с игры.
+- `Effects` — частицы (пламя, искры, дым, дымка; CPUParticles3D, с прогревом `preprocess`);
+  `ProceduralSound` — звуковые заглушки, синтезируемые кодом (костёр, ветер, шаги, скрип).
 - `CharacterModel` — модульный персонаж Quaternius; `UiStyle` — шрифт и обводка текста
   (Cormorant Garamond, OFL, `resources/fonts/`).
 

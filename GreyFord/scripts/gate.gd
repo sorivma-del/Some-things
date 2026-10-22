@@ -65,6 +65,12 @@ func open() -> void:
 		return
 	_is_open = true
 	_bar.queue_free()
+	var creak := AudioStreamPlayer3D.new()
+	creak.stream = ProceduralSound.gate_creak()
+	creak.position = Vector3(0.0, 2.0, 0.0)
+	creak.unit_size = 6.0
+	add_child(creak)
+	creak.play()
 	var tween := create_tween().set_parallel().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	for door: AnimatableBody3D in _doors:
 		var side := signf(door.position.x)
