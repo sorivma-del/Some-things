@@ -1,15 +1,31 @@
 extends Node
 ## Runs the three days. When the day's slots are spent and Mara is back in the village
-## and free, the evening ends: a night passes (the sick change), then a new morning with
-## an autosave. The third evening ends the game.
+## and free, the evening ends: a title card says how the sick are, then the night is
+## played — dark village, Mara must reach Helga's door and sleep (from night 2 the
+## elder's hunters walk the streets). Sleeping starts a new morning with an autosave.
+## The third evening ends the game.
 
 const HOME_DOOR := Vector3(-8.6, 0.0, -4.3)  ## Helga's house, where Mara sleeps.
 const MORNING_SPOT := Vector3(-7.4, 0.0, -3.4)
+const NIGHT_START := Vector3(2.4, 0.0, 3.0)
+const NIGHT_NAMES: PackedStringArray = ["Первая ночь", "Вторая ночь"]
 
 var _busy: bool = false
+var _bed: Interactable
+
+
+func _ready_bed() -> void:
+	_bed = Interactable.new()
+	_bed.prompt = "Лечь спать"
+	_bed.radius = 1.2
+	_bed.enabled = false
+	_bed.position = _on_ground(HOME_DOOR) + Vector3(0.0, 1.0, 0.0)
+	get_parent().add_child.call_deferred(_bed)
+	_bed.interacted.connect(_sleep)
 
 
 func _ready() -> void:
+	_ready_bed()
 	if GameState.play_intro:
 		GameState.save_game()  # Day 1 dawn; the intro cutscene starts the day.
 	else:
@@ -42,7 +58,25 @@ func _end_day() -> void:
 		get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 		return
 	var report := GameState.begin_night()
-	await Transition.card(PackedStringArray(["Ночь"]) + report, 2.2)
+	var night := NIGHT_NAMES[clampi(GameState.day - 1, 0, NIGHT_NAMES.size() - 1)]
+	await Transition.card(PackedStringArray([night]) + _night_lines(report), 2.2)
+	_player().call(&"teleport", _on_ground(NIGHT_START), Vector3(-1.0, 0.0, -0.4))
+	_snap_camera()
+	_bed.enabled = true
+	_set_objective("Дойти до дома Хельги и лечь спать")
+	await Transition.fade_in(1.4)
+	GameState.unlock_controls()
+	_busy = false
+
+
+func _sleep() -> void:
+	if GameState.phase != GameState.Phase.NIGHT or _busy:
+		return
+	_busy = true
+	_bed.enabled = false
+	GameState.lock_controls()
+	await Transition.fade_out(1.2)
+	_set_objective("")
 	GameState.begin_day()
 	_player().call(&"teleport", _on_ground(MORNING_SPOT), Vector3(1.0, 0.0, 0.6))
 	_snap_camera()
@@ -50,6 +84,16 @@ func _end_day() -> void:
 	await Transition.fade_in(1.2)
 	GameState.unlock_controls()
 	_busy = false
+
+
+## Two or three lines for the night card: how the sick are, and the quiet of the village.
+func _night_lines(report: PackedStringArray) -> PackedStringArray:
+	var lines := report.duplicate()
+	if lines.size() < 2:
+		lines.append("Где-то за церковью воет собака.")
+	if GameState.day >= 2:
+		lines.append("По улицам ходят люди старосты с фонарями.")
+	return lines.slice(0, 3)
 
 
 func _morning_card() -> PackedStringArray:
@@ -62,6 +106,12 @@ func _morning_card() -> PackedStringArray:
 		3:
 			lines.append("Последний день. К рассвету приедут люди барона.")
 	return lines
+
+
+func _set_objective(text: String) -> void:
+	var hud := get_tree().get_first_node_in_group(&"hud")
+	if hud:
+		hud.call(&"set_objective", text)
 
 
 func _player() -> Node3D:

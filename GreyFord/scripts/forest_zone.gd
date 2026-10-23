@@ -69,6 +69,9 @@ func _spawn_guards_for_today() -> void:
 
 
 func _on_enter() -> void:
+	if GameState.phase == GameState.Phase.NIGHT:
+		GameState.notified.emit("Ночью в лес не пройти — лаз стерегут")
+		return
 	if GameState.slots_left <= 0:
 		GameState.notified.emit("День на исходе — в лес уже поздно")
 		return
