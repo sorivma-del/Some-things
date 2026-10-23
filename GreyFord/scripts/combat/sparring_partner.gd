@@ -51,6 +51,7 @@ func _ready() -> void:
 		(node as MeshInstance3D).material_overlay = _glow
 	_glow_light.light_color = TELEGRAPH_COLOR
 	_glow_light.light_energy = 0.0
+	_glow_light.visible = false
 	_glow_light.omni_range = 2.5
 	_glow_light.position = Vector3(0, 0.6, 0)
 	sword.add_child(_glow_light)
@@ -99,6 +100,7 @@ func _physics_process(delta: float) -> void:
 			var charge := clampf(_state_time / data.windup, 0.0, 1.0)
 			_glow.albedo_color.a = 0.15 + 0.6 * charge
 			_glow_light.light_energy = 2.5 * charge
+			_glow_light.visible = true
 			if _state_time >= data.windup:
 				_set_state(State.ACTIVE)
 				_hitbox.begin_swing(data.damage, data.knockback)
@@ -130,6 +132,7 @@ func _set_state(new_state: State) -> void:
 	if new_state != State.WINDUP:
 		_glow.albedo_color.a = 0.0
 		_glow_light.light_energy = 0.0
+		_glow_light.visible = false
 	state = new_state
 	_state_time = 0.0
 

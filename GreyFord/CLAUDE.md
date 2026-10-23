@@ -160,5 +160,6 @@ godot --headless --import   # первый раз / после добавлен�
 godot --headless --quit
 ```
 
-Ошибок в выводе быть не должно. Затем коммит.
+Ошибок в выводе быть не должно. Автотесты: `tools/tests/run_all.sh` (все шесть наборов).
+Затем коммит.
 Скриншот (есть Xvfb): `xvfb-run -s "-screen 0 1280x720x24" godot --rendering-driver opengl3 ...`.

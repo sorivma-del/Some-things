@@ -40,6 +40,8 @@ extends Resource
 @export var poise: float = 0.0
 ## Poise damage that wears off per second.
 @export var poise_regen: float = 10.0
+## After a stagger it cannot be staggered again for this long (no endless juggling).
+@export var stagger_cooldown: float = 1.5
 ## Pack hunters approach from an angle up to this far off the straight line.
 @export var flank_degrees: float = 0.0
 ## Allies of the same pack within this distance join the chase.

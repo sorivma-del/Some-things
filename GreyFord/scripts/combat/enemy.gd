@@ -70,6 +70,7 @@ var _cooldown: float = 0.0
 var _unseen_time: float = 0.0
 var _search_turn: float = 0.0
 var _poise_damage: float = 0.0
+var _since_stagger: float = 100.0
 var _route_index: int = 0
 var _home: Vector3
 var _flank: float = 0.0
@@ -127,6 +128,7 @@ func _ready() -> void:
 	_glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_glow.albedo_color = Color(1, 1, 1, 0)
 	_glow_light.light_energy = 0.0
+	_glow_light.visible = false
 	_glow_light.omni_range = 2.6
 	if weapon_scene:
 		var weapon := weapon_scene.instantiate() as Node3D
@@ -165,6 +167,7 @@ func _physics_process(delta: float) -> void:
 	_state_time += delta
 	_cooldown -= delta
 	_poise_damage = maxf(_poise_damage - data.poise_regen * delta, 0.0)
+	_since_stagger += delta
 	if _player == null:
 		_player = get_tree().get_first_node_in_group(&"player") as Node3D
 	sense.view_distance = data.sight_radius * (data.night_sight_multiplier if _is_night() else 1.0)
@@ -428,6 +431,7 @@ func _update_attack(delta: float) -> Vector3:
 ## 0..1 over the windup: the weapon (or the beast itself) glows brighter.
 func _telegraph(charge: float) -> void:
 	_glow_light.light_energy = 2.5 * charge
+	_glow_light.visible = charge > 0.0  # A dark light still costs a render pass.
 	if _weapon_glows:
 		_glow.albedo_color.a = 0.0 if charge <= 0.0 else 0.15 + 0.6 * charge
 	else:
@@ -448,8 +452,10 @@ func _struck(info: HitInfo) -> void:
 	if not phase_two and not data.phase_two_attacks.is_empty() and health_ratio() <= data.phase_two_health:
 		_enter_phase_two()
 	_poise_damage += info.damage
-	if _poise_damage >= data.poise and not (state == State.ATTACK and _attack_phase == AttackPhase.ACTIVE):
+	var can_stagger := _since_stagger >= data.stagger_cooldown and not (state == State.ATTACK and _attack_phase == AttackPhase.ACTIVE)
+	if _poise_damage >= data.poise and can_stagger:
 		_poise_damage = 0.0
+		_since_stagger = 0.0
 		_set_state(State.STAGGER)
 		_model.play_once(anim_hit, data.stagger_time)
 	elif not _is_fighting():

@@ -40,6 +40,7 @@ chase_speed = 3.2
 view_angle_degrees = 60.0
 attack_interval = 1.4
 poise = 25.0
+stagger_cooldown = 1.8
 loot = SubResource("loot")
 bribe_cost = 15
 persuade_difficulty = 13

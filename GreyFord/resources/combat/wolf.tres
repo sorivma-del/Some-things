@@ -45,6 +45,7 @@ view_angle_degrees = 70.0
 notice_rate = 1.4
 attack_interval = 1.6
 poise = 0.0
+stagger_cooldown = 1.0
 flank_degrees = 55.0
 loot = SubResource("loot")
 corpse_time = 8.0
