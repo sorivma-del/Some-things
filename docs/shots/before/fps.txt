@@ -1,0 +1,5 @@
+# FPS, before, llvmpipe (LLVM 20.1.2, 256 bits)
+renderer: forward_plus
+campfire: 0.4 FPS avg, 2487.2 ms avg, 2506.9 ms worst
+overview: 0.3 FPS avg, 3049.4 ms avg, 3163.7 ms worst
+forest: 0.6 FPS avg, 1553.6 ms avg, 1605.1 ms worst
