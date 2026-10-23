@@ -1,6 +1,7 @@
 extends CharacterBody3D
 ## Mara: third-person movement relative to the active camera. Ignores input while
 ## GameState.controls_locked is set (dialogue, cutscenes); cutscenes move her with walk_to().
+## With a PlayerCombat child named "Combat", that node drives movement and animation.
 
 ## Emitted when a walk_to() target is reached.
 signal arrived
@@ -40,6 +41,7 @@ var _steps := AudioStreamPlayer3D.new()
 var _step_sounds: Array[AudioStreamWAV] = []
 
 @onready var _model: CharacterModel = $Model
+@onready var _combat: PlayerCombat = get_node_or_null(^"Combat") as PlayerCombat
 
 
 func _ready() -> void:
@@ -66,6 +68,12 @@ func _physics_process(delta: float) -> void:
 		var input := Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 		direction = _camera_relative(input)
 
+	if _combat and not _walking_to:
+		_combat.drive(direction, delta)
+		move_and_slide()
+		_footsteps(delta, _combat.plays_footsteps() and Vector2(velocity.x, velocity.z).length() > 0.4)
+		return
+
 	var target := direction * walk_speed
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z).move_toward(target, acceleration * delta)
 	velocity.x = horizontal.x
@@ -73,16 +81,20 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	var moving := horizontal.length() > 0.4
 	_model.play(walk_animation if moving else idle_animation)
+	_footsteps(delta, moving)
+
+	if direction.length_squared() > 0.001:
+		var target_yaw := atan2(-direction.x, -direction.z)
+		_model.rotation.y = lerp_angle(_model.rotation.y, target_yaw, clampf(turn_speed * delta, 0.0, 1.0))
+
+
+func _footsteps(delta: float, moving: bool) -> void:
 	_step_time = _step_time + delta if moving else step_interval * 0.6
 	if _step_time >= step_interval:
 		_step_time = 0.0
 		_steps.stream = _step_sounds.pick_random()
 		_steps.pitch_scale = randf_range(0.85, 1.1)
 		_steps.play()
-
-	if direction.length_squared() > 0.001:
-		var target_yaw := atan2(-direction.x, -direction.z)
-		_model.rotation.y = lerp_angle(_model.rotation.y, target_yaw, clampf(turn_speed * delta, 0.0, 1.0))
 
 
 func enter_cover(zone: HideZone) -> void:

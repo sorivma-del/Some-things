@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="HeroCombatData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/hero_combat_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+max_health = 100.0
+move_speed = 3.6
+block_move_factor = 0.45
+max_stamina = 100.0
+stamina_regen = 38.0
+stamina_regen_delay = 0.8
+attack_cost = 18.0
+roll_cost = 25.0
+block_hold_cost = 6.0
+block_hit_cost = 12.0
+damage = 20.0
+windup = 0.16
+active = 0.14
+recovery = 0.32
+input_buffer = 0.25
+reach = Vector3(1.7, 1.4, 1.5)
+knockback = 3.2
+lunge_speed = 1.6
+block_angle_degrees = 75.0
+block_damage_factor = 0.0
+guard_break_time = 0.9
+roll_time = 0.62
+roll_speed = 6.2
+iframes_start = 0.0
+iframes_end = 0.42
+hurt_time = 0.45
+hurt_knockback_scale = 1.0
+knockback_decay = 9.0
+hitstop_ms = 65.0
+hitstop_hurt_ms = 80.0
+shake_hit = 0.06
+shake_hurt = 0.14
+shake_time = 0.18
+lock_range = 14.0
+lock_cone_degrees = 50.0
+lock_break_distance = 18.0
+death_coin_loss = 0.25
+death_fade_delay = 1.6

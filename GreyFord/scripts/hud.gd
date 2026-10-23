@@ -2,11 +2,15 @@ extends CanvasLayer
 ## On-screen HUD: the interaction prompt (from the player's InteractionDetector, found by
 ## group), skill-check results (DialogueRunner.check_rolled), the day and remaining action
 ## slots, herbs and medicine in hand, and short notifications (GameState.notified).
+## When Mara can fight (a PlayerCombat in the scene): health and stamina bars, coins,
+## and the locked-on target's name and health.
 
 const ROLL_SPIN_TIME := 0.9
 const ROLL_HOLD_TIME := 1.5
 const COLOR_SUCCESS := Color(0.68, 0.8, 0.56)
 const COLOR_FAILURE := Color(0.86, 0.38, 0.3)
+const COLOR_HEALTH := Color(0.62, 0.16, 0.12)
+const COLOR_STAMINA := Color(0.72, 0.6, 0.3)
 
 @onready var _prompt: Label = %PromptLabel
 
@@ -21,6 +25,14 @@ var _slots_label: Label
 var _objective_label: Label
 var _inventory_label: Label
 var _toasts: VBoxContainer
+var _combat_box: VBoxContainer
+var _health_bar: ProgressBar
+var _stamina_bar: ProgressBar
+var _coins_label: Label
+var _target_box: VBoxContainer
+var _target_name: Label
+var _target_bar: ProgressBar
+var _target: Node3D
 
 
 func _ready() -> void:
@@ -39,11 +51,25 @@ func _ready() -> void:
 	GameState.inventory_changed.connect(_refresh_status)
 	GameState.notified.connect(_toast)
 	_refresh_status()
+	_build_combat()
+	_connect_combat.call_deferred()
+
+
+func _process(_delta: float) -> void:
+	if is_instance_valid(_target):
+		_target_bar.value = float(_target.call(&"health_ratio")) * 100.0
 
 
 ## Text under the day line, e.g. the night's goal. Empty hides it.
 func set_objective(text: String) -> void:
 	_objective_label.text = text
+
+
+## Hides the day, slots and herb lines (the combat arena has no days); the objective stays.
+func set_day_status_visible(value: bool) -> void:
+	_time_label.visible = value
+	_slots_label.visible = value
+	_inventory_label.visible = value
 
 
 func _refresh_status() -> void:
@@ -106,6 +132,86 @@ func _build_status() -> void:
 	_toasts.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_toasts.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_toasts)
+
+
+func _build_combat() -> void:
+	_combat_box = VBoxContainer.new()
+	_combat_box.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	_combat_box.offset_left = 28.0
+	_combat_box.offset_top = -132.0
+	_combat_box.offset_bottom = -52.0
+	_combat_box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_combat_box.add_theme_constant_override(&"separation", 6)
+	_combat_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_combat_box.visible = false
+	add_child(_combat_box)
+	_health_bar = _bar(COLOR_HEALTH, Vector2(300, 12))
+	_combat_box.add_child(_health_bar)
+	_stamina_bar = _bar(COLOR_STAMINA, Vector2(240, 7))
+	_combat_box.add_child(_stamina_bar)
+	_coins_label = Label.new()
+	UiStyle.apply_label(_coins_label, 20, 600, true, UiStyle.COLOR_ACCENT)
+	_combat_box.add_child(_coins_label)
+
+	_target_box = VBoxContainer.new()
+	_target_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_target_box.offset_top = 24.0
+	_target_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_target_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	_target_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_target_box.modulate.a = 0.0
+	add_child(_target_box)
+	_target_name = Label.new()
+	_target_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UiStyle.apply_label(_target_name, 22, 700, false, UiStyle.COLOR_TEXT, 3)
+	_target_box.add_child(_target_name)
+	_target_bar = _bar(COLOR_HEALTH, Vector2(320, 6))
+	_target_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_target_box.add_child(_target_bar)
+
+
+func _connect_combat() -> void:
+	var combat := get_tree().get_first_node_in_group(PlayerCombat.GROUP) as PlayerCombat
+	if combat == null:
+		return
+	_combat_box.visible = true
+	combat.health_changed.connect(func(value: float, max_value: float) -> void: _health_bar.value = value / max_value * 100.0)
+	combat.stamina_changed.connect(func(value: float, max_value: float) -> void: _stamina_bar.value = value / max_value * 100.0)
+	combat.target_changed.connect(_on_target_changed)
+	GameState.coins_changed.connect(_on_coins_changed)
+	_health_bar.value = combat.health / combat.data.max_health * 100.0
+	_stamina_bar.value = combat.stamina / combat.data.max_stamina * 100.0
+	_on_coins_changed(GameState.coins)
+
+
+func _on_coins_changed(coins: int) -> void:
+	_coins_label.text = "Монеты  %d" % coins
+
+
+func _on_target_changed(node: Node3D) -> void:
+	_target = node
+	if node:
+		_target_name.text = str(node.get(&"lock_name")).to_upper()
+		_target_bar.value = float(node.call(&"health_ratio")) * 100.0
+	create_tween().tween_property(_target_box, ^"modulate:a", 1.0 if node else 0.0, 0.2)
+
+
+func _bar(color: Color, bar_size: Vector2) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size = bar_size
+	bar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	bar.show_percentage = false
+	bar.value = 100.0
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var back := StyleBoxFlat.new()
+	back.bg_color = Color(0.05, 0.04, 0.04, 0.6)
+	back.border_color = Color(UiStyle.COLOR_DIM, 0.5)
+	back.set_border_width_all(1)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = color
+	bar.add_theme_stylebox_override(&"background", back)
+	bar.add_theme_stylebox_override(&"fill", fill)
+	return bar
 
 
 func _on_focus_changed(prompt: String) -> void:

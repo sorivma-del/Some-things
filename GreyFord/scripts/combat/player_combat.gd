@@ -1,0 +1,446 @@
+class_name PlayerCombat
+extends Node
+## Mara's melee: a light sword attack, a shield held up with the block key, a roll with
+## invulnerability frames, stamina, lock-on, getting hit and falling. Sits as a "Combat"
+## child of the Player, which hands it movement every physics frame (drive()).
+## Numbers come from HeroCombatData (resources/combat/hero_combat.tres).
+
+signal health_changed(value: float, max_value: float)
+signal stamina_changed(value: float, max_value: float)
+## Locked-on target changed; null when the lock is released.
+signal target_changed(target: Node3D)
+signal died
+signal respawned
+
+enum State { NORMAL, ATTACK, ROLL, HURT, GUARD_BROKEN, DEAD }
+enum AttackPhase { WINDUP, ACTIVE, RECOVERY }
+
+const GROUP := &"player_combat"
+## Nodes Mara can lock onto. They provide `lock_name`, `can_be_locked()` and `health_ratio()`.
+const TARGET_GROUP := &"lock_target"
+const ATTACK_CLIPS: Array[StringName] = [&"Sword_Regular_A", &"Sword_Regular_B"]
+const SWORD := preload("res://resources/models/props/Sword_Bronze.gltf")
+const SHIELD := preload("res://resources/models/props/Shield_Wooden.gltf")
+const ACCELERATION := 16.0
+const TURN_SPEED := 12.0
+
+@export var data: HeroCombatData = preload("res://resources/combat/hero_combat.tres")
+
+var state: State = State.NORMAL
+var health: float
+var stamina: float
+var blocking: bool = false
+## Debug: blows do nothing.
+var invulnerable: bool = false
+var target: Node3D
+
+var _body: CharacterBody3D
+var _model: CharacterModel
+var _hitbox: Hitbox
+var _hurtbox: Hurtbox
+var _state_time: float = 0.0
+var _attack_phase: AttackPhase = AttackPhase.WINDUP
+var _attack_index: int = 0
+var _attack_queued: bool = false
+var _roll_direction: Vector3
+var _knockback: Vector3
+var _since_spend: float = 100.0
+var _spawn_point: Vector3
+var _sfx := AudioStreamPlayer3D.new()
+var _sounds: Dictionary[StringName, AudioStreamWAV] = {}
+
+
+func _ready() -> void:
+	add_to_group(GROUP)
+	_body = get_parent() as CharacterBody3D
+	_model = _body.get_node(^"Model") as CharacterModel
+	health = data.max_health
+	stamina = data.max_stamina
+	_spawn_point = _body.global_position
+	# Bump into enemies (physics layer 2) instead of walking through them.
+	_body.set_collision_mask_value(2, true)
+
+	_hurtbox = Hurtbox.new()
+	_hurtbox.body = _body
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = 0.4
+	capsule.height = 1.6
+	var shape := CollisionShape3D.new()
+	shape.shape = capsule
+	_hurtbox.add_child(shape)
+	_hurtbox.position = Vector3(0, 0.9, 0)
+	_body.add_child.call_deferred(_hurtbox)
+	_hurtbox.hit.connect(_on_hit)
+
+	_hitbox = Hitbox.new()
+	_hitbox.body = _body
+	_hitbox.set_size(data.reach)
+	_hitbox.position = Vector3(0, 1.0, -data.reach.z * 0.5 - 0.15)
+	_model.add_child.call_deferred(_hitbox)
+	_hitbox.landed.connect(_on_landed)
+
+	_sfx.volume_db = -4.0
+	_sfx.position = Vector3(0, 1.2, 0)
+	_body.add_child.call_deferred(_sfx)
+	_sounds = {&"swing": ProceduralSound.swing(), &"hit": ProceduralSound.hit(), &"block": ProceduralSound.block()}
+	_arm.call_deferred()
+
+
+## Sword in the right hand, shield on the left forearm.
+func _arm() -> void:
+	var sword := SWORD.instantiate() as Node3D
+	_model.attach_to_bone(sword, &"hand_r", Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0.07, 0.02)))
+	var shield := SHIELD.instantiate() as Node3D
+	var shield_basis := Basis(Vector3.UP, -PI * 0.5) * Basis(Vector3.RIGHT, PI * 0.5)
+	_model.attach_to_bone(shield, &"hand_l", Transform3D(shield_basis.scaled(Vector3.ONE * 0.85), Vector3(0.0, 0.0, -0.06)))
+
+
+## Movement, facing and animation for this physics frame. `direction` is the input
+## direction relative to the camera (zero while controls are locked).
+func drive(direction: Vector3, delta: float) -> void:
+	_state_time += delta
+	_since_spend += delta
+	_update_target()
+	if _can_act():
+		_read_input(direction)
+
+	var goal := Vector3.ZERO
+	match state:
+		State.NORMAL:
+			blocking = _can_act() and Input.is_action_pressed(&"block") and stamina > 0.0
+			if blocking:
+				_spend(data.block_hold_cost * delta)
+			goal = direction * data.move_speed * (data.block_move_factor if blocking else 1.0)
+			if is_instance_valid(target):
+				_face(target.global_position - _body.global_position, delta)
+			elif direction.length_squared() > 0.001:
+				_face(direction, delta)
+			_play_locomotion(direction.length() > 0.1)
+		State.ATTACK:
+			_update_attack()
+			if _attack_phase == AttackPhase.WINDUP:
+				goal = _forward() * data.lunge_speed
+		State.ROLL:
+			var t := _state_time / data.roll_time
+			goal = _roll_direction * data.roll_speed * (1.0 - t * t * 0.6)
+			if _state_time >= data.roll_time:
+				_set_state(State.NORMAL)
+		State.HURT:
+			if _state_time >= data.hurt_time:
+				_set_state(State.NORMAL)
+		State.GUARD_BROKEN:
+			if _state_time >= data.guard_break_time:
+				_set_state(State.NORMAL)
+
+	if not blocking and _since_spend >= data.stamina_regen_delay and stamina < data.max_stamina:
+		stamina = minf(stamina + data.stamina_regen * delta, data.max_stamina)
+		stamina_changed.emit(stamina, data.max_stamina)
+
+	_knockback = _knockback.move_toward(Vector3.ZERO, data.knockback_decay * delta)
+	var horizontal := Vector3(_body.velocity.x, 0.0, _body.velocity.z)
+	if state == State.NORMAL:
+		horizontal = horizontal.move_toward(goal, ACCELERATION * delta)
+	else:
+		horizontal = goal
+	horizontal += _knockback
+	_body.velocity.x = horizontal.x
+	_body.velocity.z = horizontal.z
+
+
+func plays_footsteps() -> bool:
+	return state == State.NORMAL
+
+
+func is_invulnerable() -> bool:
+	if invulnerable:
+		return true
+	return state == State.ROLL and _state_time >= data.iframes_start and _state_time <= data.iframes_end
+
+
+## Back at full strength (also used by debug tools).
+func restore() -> void:
+	health = data.max_health
+	stamina = data.max_stamina
+	health_changed.emit(health, data.max_health)
+	stamina_changed.emit(stamina, data.max_stamina)
+
+
+#region Input and actions
+
+func _read_input(direction: Vector3) -> void:
+	if Input.is_action_just_pressed(&"lock_on"):
+		_set_target(null if is_instance_valid(target) else _find_target())
+	if Input.is_action_just_pressed(&"switch_target") and is_instance_valid(target):
+		_switch_target()
+	if Input.is_action_just_pressed(&"roll"):
+		var can_cancel := state == State.ATTACK and _attack_phase == AttackPhase.RECOVERY
+		if state == State.NORMAL or can_cancel:
+			_start_roll(direction)
+	if Input.is_action_just_pressed(&"attack"):
+		if state == State.NORMAL:
+			_start_attack(0)
+		elif state == State.ATTACK and _attack_time_left() <= data.input_buffer:
+			_attack_queued = true
+
+
+func _start_attack(index: int) -> void:
+	if stamina < data.attack_cost:
+		return
+	_spend(data.attack_cost)
+	_set_state(State.ATTACK)
+	_attack_phase = AttackPhase.WINDUP
+	_attack_index = index
+	_attack_queued = false
+	if is_instance_valid(target):
+		_face(target.global_position - _body.global_position, 1.0, true)
+	else:
+		var input := _camera_relative_input()
+		if input != Vector3.ZERO:
+			_face(input, 1.0, true)
+	_model.play_once(ATTACK_CLIPS[index % ATTACK_CLIPS.size()], data.windup + data.active)
+
+
+func _update_attack() -> void:
+	if _attack_phase == AttackPhase.WINDUP and _state_time >= data.windup:
+		_attack_phase = AttackPhase.ACTIVE
+		_hitbox.begin_swing(data.damage, data.knockback)
+		_play_sound(&"swing")
+	if _attack_phase == AttackPhase.ACTIVE and _state_time >= data.windup + data.active:
+		_attack_phase = AttackPhase.RECOVERY
+		_hitbox.end_swing()
+		var clip := ATTACK_CLIPS[_attack_index % ATTACK_CLIPS.size()]
+		_model.play_once(StringName(String(clip) + "_Rec"), data.recovery * 1.6)
+	if _attack_phase == AttackPhase.RECOVERY and _attack_time_left() <= 0.0:
+		if _attack_queued and stamina >= data.attack_cost:
+			_start_attack(_attack_index + 1)
+		else:
+			_set_state(State.NORMAL)
+
+
+func _attack_time_left() -> float:
+	return data.windup + data.active + data.recovery - _state_time
+
+
+func _start_roll(direction: Vector3) -> void:
+	if stamina < data.roll_cost:
+		return
+	_spend(data.roll_cost)
+	_set_state(State.ROLL)
+	_roll_direction = direction.normalized() if direction.length_squared() > 0.01 else _forward()
+	_face(_roll_direction, 1.0, true)
+	_model.play_once(&"Roll", data.roll_time)
+
+
+func _set_state(new_state: State) -> void:
+	if state == State.ATTACK and new_state != State.ATTACK:
+		_hitbox.end_swing()
+		_attack_queued = false
+	state = new_state
+	_state_time = 0.0
+	if new_state != State.NORMAL:
+		blocking = false
+
+
+func _spend(amount: float) -> void:
+	stamina = maxf(stamina - amount, 0.0)
+	_since_spend = 0.0
+	stamina_changed.emit(stamina, data.max_stamina)
+
+#endregion
+
+
+#region Being hit
+
+func _on_hit(info: HitInfo) -> void:
+	if state == State.DEAD or is_invulnerable():
+		info.result = HitInfo.Result.IGNORED
+		return
+	if blocking and state == State.NORMAL and _forward().dot(-info.direction) >= cos(deg_to_rad(data.block_angle_degrees)):
+		var cost := data.block_hit_cost * info.damage / 10.0
+		if stamina >= cost:
+			_spend(cost)
+			_take_damage(info.damage * data.block_damage_factor)
+			_knockback = info.direction * info.knockback * data.hurt_knockback_scale * 0.35
+			info.result = HitInfo.Result.BLOCKED
+			_play_sound(&"block")
+			_model.play_once(&"Sword_Block", 0.5)
+			HitFeel.shake(get_tree(), data.shake_hit, data.shake_time)
+			HitFeel.hitstop(get_tree(), data.hitstop_ms)
+			return
+		# Not enough stamina to hold the blow: the guard breaks.
+		_spend(stamina)
+		_set_state(State.GUARD_BROKEN)
+		_model.play_once(&"Idle_Shield_Break", data.guard_break_time)
+
+	_take_damage(info.damage)
+	_knockback = info.direction * info.knockback * data.hurt_knockback_scale
+	info.result = HitInfo.Result.HIT
+	_play_sound(&"hit")
+	HitFeel.shake(get_tree(), data.shake_hurt, data.shake_time)
+	HitFeel.hitstop(get_tree(), data.hitstop_hurt_ms)
+	if health <= 0.0:
+		info.result = HitInfo.Result.KILLED
+		_die()
+	elif state != State.GUARD_BROKEN:
+		_set_state(State.HURT)
+		_model.play_once(&"Hit_Chest", data.hurt_time)
+
+
+func _take_damage(amount: float) -> void:
+	if amount <= 0.0:
+		return
+	health = maxf(health - amount, 0.0)
+	health_changed.emit(health, data.max_health)
+
+
+func _on_landed(_hurtbox: Hurtbox, info: HitInfo) -> void:
+	_play_sound(&"block" if info.result == HitInfo.Result.BLOCKED else &"hit")
+	HitFeel.shake(get_tree(), data.shake_hit, data.shake_time)
+	HitFeel.hitstop(get_tree(), data.hitstop_ms)
+
+
+## Falls, then wakes at the last campfire with fewer coins. Story flags are untouched.
+func _die() -> void:
+	_set_state(State.DEAD)
+	_set_target(null)
+	_model.play_once(&"Death01")
+	GameState.lock_controls()
+	died.emit()
+	await get_tree().create_timer(data.death_fade_delay).timeout
+	await Transition.fade_out(0.8)
+	var point := GameState.respawn_point if GameState.has_respawn_point else _spawn_point
+	_body.call(&"teleport", point)
+	var lost := ceili(GameState.coins * data.death_coin_loss)
+	GameState.coins -= lost
+	restore()
+	_knockback = Vector3.ZERO
+	_set_state(State.NORMAL)
+	_model.play(&"Idle")
+	get_tree().call_group(&"camera_rig", &"snap_behind_target")
+	await Transition.fade_in(0.8)
+	GameState.unlock_controls()
+	GameState.notified.emit("Мара очнулась у костра" + (". Потеряно монет: %d" % lost if lost > 0 else ""))
+	respawned.emit()
+
+#endregion
+
+
+#region Lock-on
+
+func _set_target(node: Node3D) -> void:
+	if node == target:
+		return
+	target = node
+	get_tree().call_group(&"camera_rig", &"set_lock_target", node)
+	target_changed.emit(node)
+
+
+func _update_target() -> void:
+	if target == null:
+		return
+	if not is_instance_valid(target) or not target.call(&"can_be_locked") \
+			or target.global_position.distance_to(_body.global_position) > data.lock_break_distance:
+		_set_target(null)
+
+
+## Lockable targets in range and in sight, with their angle off the camera's forward.
+func _candidates() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var camera := get_viewport().get_camera_3d()
+	var forward := -camera.global_basis.z if camera else _forward()
+	forward.y = 0.0
+	forward = forward.normalized()
+	for node: Node in get_tree().get_nodes_in_group(TARGET_GROUP):
+		var candidate := node as Node3D
+		if candidate == null or not candidate.call(&"can_be_locked"):
+			continue
+		var to := candidate.global_position - _body.global_position
+		to.y = 0.0
+		if to.length() > data.lock_range or not _in_sight(candidate):
+			continue
+		result.append({"node": candidate, "angle": rad_to_deg(forward.signed_angle_to(to.normalized(), Vector3.UP)), "distance": to.length()})
+	return result
+
+
+func _find_target() -> Node3D:
+	var best: Node3D = null
+	var best_score := INF
+	for c: Dictionary in _candidates():
+		var angle: float = absf(c["angle"])
+		if angle > data.lock_cone_degrees:
+			continue
+		var score: float = angle + float(c["distance"]) * 3.0
+		if score < best_score:
+			best_score = score
+			best = c["node"]
+	return best
+
+
+## Next target to the right of the current one (wrapping round).
+func _switch_target() -> void:
+	var list := _candidates()
+	if list.size() < 2:
+		return
+	list.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["angle"]) > float(b["angle"]))
+	for i: int in list.size():
+		if list[i]["node"] == target:
+			_set_target(list[(i + 1) % list.size()]["node"])
+			return
+
+
+func _in_sight(node: Node3D) -> bool:
+	var query := PhysicsRayQueryParameters3D.create(_body.global_position + Vector3.UP * 1.3, node.global_position + Vector3.UP * 1.0, 1)
+	query.exclude = [_body.get_rid()]
+	var hit := _body.get_world_3d().direct_space_state.intersect_ray(query)
+	return hit.is_empty() or hit["collider"] == node
+
+#endregion
+
+
+#region Helpers
+
+## Not in a dialogue or cutscene, not hiding behind a door, not down.
+func _can_act() -> bool:
+	return not GameState.controls_locked and state != State.DEAD and not _body.get(&"frozen")
+
+
+func _forward() -> Vector3:
+	var forward := -_model.global_basis.z
+	forward.y = 0.0
+	return forward.normalized()
+
+
+func _face(direction: Vector3, delta: float, instant: bool = false) -> void:
+	if Vector2(direction.x, direction.z).length_squared() < 0.0001:
+		return
+	var yaw := atan2(-direction.x, -direction.z)
+	_model.rotation.y = yaw if instant else lerp_angle(_model.rotation.y, yaw, clampf(TURN_SPEED * delta, 0.0, 1.0))
+
+
+func _play_locomotion(moving: bool) -> void:
+	if blocking:
+		_model.play(&"Idle_Shield")
+	elif moving:
+		_model.play(&"Jog_Fwd")
+	else:
+		_model.play(&"Sword_Idle" if is_instance_valid(target) else &"Idle")
+
+
+func _camera_relative_input() -> Vector3:
+	var input := Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
+	var camera := get_viewport().get_camera_3d()
+	if input == Vector2.ZERO or camera == null:
+		return Vector3.ZERO
+	var forward := -camera.global_basis.z
+	forward.y = 0.0
+	var right := camera.global_basis.x
+	right.y = 0.0
+	return (right.normalized() * input.x - forward.normalized() * input.y).normalized()
+
+
+func _play_sound(sound: StringName) -> void:
+	_sfx.stream = _sounds[sound]
+	_sfx.pitch_scale = randf_range(0.9, 1.1)
+	_sfx.play()
+
+#endregion

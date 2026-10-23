@@ -84,6 +84,18 @@ GreyFord/
 - `Guard` — стелс-ИИ (конус зрения + луч, Patrol/Suspicious/Chase/Search), `HideZone` — укрытия.
 - `Transition` (автолоад) — затемнения и титры. `main_menu.tscn` — стартовая сцена.
 
+## Бой (третья часть, шаг 1)
+
+- `PlayerCombat` — дочерний узел `Combat` у игрока; если он есть, `player.gd` отдаёт ему
+  движение (`drive()`). Удар/блок/перекат/стамина/захват цели/смерть. Числа —
+  `resources/combat/hero_combat.tres` (`HeroCombatData`).
+- `Hitbox` / `Hurtbox` (физ. слой 5) обмениваются `HitInfo`; получатель пишет `result`.
+- `CombatBody` — база для целей (здоровье из `EnemyData`, вспышка, цифры урона, группа
+  `lock_target`, слой 2). `TrainingDummy`, `SparringPartner` — цели арены.
+- `HitFeel` — hitstop через `Engine.time_scale` и тряска камеры (группа `camera_rig`).
+- `RespawnPoint` у костра запоминает `GameState.respawn_point`; монеты — `GameState.coins`.
+- Тестовая арена `scenes/test/combat_arena.tscn`, автотест `tools/tests/combat_test.gd`.
+
 ## Правила
 
 - Только Godot 4 API. Никаких `yield`, `onready var` без `@`, `KinematicBody` и т.п.
@@ -94,7 +106,7 @@ GreyFord/
   `$"/root/..."`). Допустимо: дочерние узлы своей сцены, группы, `@export`-ссылки,
   сигналы автолоадов.
 - Числа баланса (статы, сложности) — в `.tres`, не в коде.
-- Не добавлять то, чего нет в задаче: инвентарь, бой, сохранения и т.п.
+- Не добавлять то, чего нет в задаче; идеи вне плана — в `docs/ideas.md`.
 - Тексты для игрока — на русском.
 
 ## Проверка

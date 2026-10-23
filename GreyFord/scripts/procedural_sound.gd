@@ -76,6 +76,48 @@ static func gate_creak() -> AudioStreamWAV:
 	return _to_wav(samples, false)
 
 
+## Blade cutting the air: band-passed noise swelling and fading.
+static func swing() -> AudioStreamWAV:
+	var rng := _rng(31)
+	var samples := PackedFloat32Array()
+	samples.resize(int(RATE * 0.22))
+	var a := 0.0
+	var b := 0.0
+	for i: int in samples.size():
+		var t := float(i) / samples.size()
+		a += (rng.randf_range(-1.0, 1.0) - a) * (0.15 + 0.35 * t)
+		b += (a - b) * 0.5
+		samples[i] = (a - b) * sin(PI * t) * 3.0
+	return _to_wav(samples, false)
+
+
+## A blow landing on flesh or straw: low thump with a short crack.
+static func hit() -> AudioStreamWAV:
+	var rng := _rng(41)
+	var samples := PackedFloat32Array()
+	samples.resize(int(RATE * 0.2))
+	var low := 0.0
+	for i: int in samples.size():
+		var t := float(i) / samples.size()
+		low += (rng.randf_range(-1.0, 1.0) - low) * 0.08
+		var thump := sin(TAU * (90.0 - 50.0 * t) * float(i) / RATE)
+		samples[i] = (thump * 0.8 + low * 2.0) * pow(1.0 - t, 4.0) + rng.randf_range(-1.0, 1.0) * maxf(0.0, 1.0 - t * 12.0) * 0.5
+	return _to_wav(samples, false)
+
+
+## Steel on a wooden shield: ringing partials over a knock.
+static func block() -> AudioStreamWAV:
+	var rng := _rng(53)
+	var samples := PackedFloat32Array()
+	samples.resize(int(RATE * 0.45))
+	for i: int in samples.size():
+		var t := float(i) / samples.size()
+		var s := float(i) / RATE
+		var ring := sin(TAU * 1240.0 * s) * 0.4 + sin(TAU * 1873.0 * s) * 0.25 + sin(TAU * 610.0 * s) * 0.3
+		samples[i] = ring * pow(1.0 - t, 6.0) * 0.7 + rng.randf_range(-1.0, 1.0) * maxf(0.0, 1.0 - t * 15.0) * 0.6
+	return _to_wav(samples, false)
+
+
 static func _rng(seed_value: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value

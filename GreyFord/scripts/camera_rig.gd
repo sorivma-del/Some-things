@@ -1,6 +1,7 @@
 extends Node3D
 ## Third-person follow camera. Smoothly trails the target; hold the right mouse
-## button to orbit. A SpringArm3D keeps the camera out of walls.
+## button to orbit. A SpringArm3D keeps the camera out of walls. In combat it can hold a
+## locked-on target in view (set_lock_target) and shake when blows land.
 
 @export var target: Node3D
 @export var follow_speed: float = 6.0
@@ -16,10 +17,18 @@ extends Node3D
 ## Camera swings this far off the Mara-to-speaker line, looking over her shoulder.
 @export var dialogue_side_degrees: float = 40.0
 @export var framing_speed: float = 3.0
+@export_group("Lock-on")
+## How quickly the camera swings round to keep a locked target in view.
+@export var lock_follow_speed: float = 4.0
+@export var lock_pitch_degrees: float = -16.0
 
 var _speaker: Node3D
 var _saved_yaw: float
 var _saved_pitch: float
+var _lock_target: Node3D
+var _shake_strength: float = 0.0
+var _shake_until_ms: int = 0
+var _shake_length_ms: int = 1
 
 @onready var _arm: SpringArm3D = $SpringArm3D
 @onready var _camera: Camera3D = $SpringArm3D/Camera3D
@@ -50,11 +59,42 @@ func _process(delta: float) -> void:
 	if _speaker:
 		goal = (target.global_position + _speaker.global_position) * 0.5 + Vector3.UP * (height - 0.2)
 		length = dialogue_distance
+	elif is_instance_valid(_lock_target):
+		var to := _lock_target.global_position - target.global_position
+		if Vector2(to.x, to.z).length_squared() > 0.01:
+			var lock_yaw := rad_to_deg(atan2(-to.x, -to.z))
+			var follow := clampf(lock_follow_speed * delta, 0.0, 1.0)
+			yaw_degrees = rad_to_deg(lerp_angle(deg_to_rad(yaw_degrees), deg_to_rad(lock_yaw), follow))
+			pitch_degrees = lerpf(pitch_degrees, lock_pitch_degrees, follow)
 	global_position = global_position.lerp(goal, clampf(follow_speed * delta, 0.0, 1.0))
 	var weight := clampf(framing_speed * delta, 0.0, 1.0)
 	rotation.x = lerp_angle(rotation.x, deg_to_rad(pitch_degrees), weight)
 	rotation.y = lerp_angle(rotation.y, deg_to_rad(yaw_degrees), weight)
 	_arm.spring_length = lerpf(_arm.spring_length, length, weight)
+	_update_shake()
+
+
+## Keeps `node` in view (null releases the lock).
+func set_lock_target(node: Node3D) -> void:
+	_lock_target = node
+
+
+func shake(strength: float, duration: float) -> void:
+	_shake_strength = maxf(strength, _shake_strength if Time.get_ticks_msec() < _shake_until_ms else 0.0)
+	_shake_length_ms = maxi(1, int(duration * 1000.0))
+	_shake_until_ms = Time.get_ticks_msec() + _shake_length_ms
+
+
+## Shake runs on real time so it keeps going through hitstop.
+func _update_shake() -> void:
+	var left := _shake_until_ms - Time.get_ticks_msec()
+	if left <= 0:
+		_camera.h_offset = 0.0
+		_camera.v_offset = 0.0
+		return
+	var amount := _shake_strength * float(left) / _shake_length_ms
+	_camera.h_offset = randf_range(-amount, amount)
+	_camera.v_offset = randf_range(-amount, amount)
 
 
 func snap_to_target() -> void:

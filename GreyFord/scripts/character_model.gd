@@ -28,6 +28,7 @@ static var _head_mesh_cache: Dictionary[ArrayMesh, ArrayMesh] = {}
 @export var blend_time: float = 0.25
 
 var _player: AnimationPlayer
+var _skeleton: Skeleton3D
 
 
 func _ready() -> void:
@@ -36,9 +37,9 @@ func _ready() -> void:
 	# glTF characters face +Z; the rest of the game treats -Z as forward.
 	model.rotation.y = PI
 	add_child(model)
-	var skeleton := model.find_child("Skeleton3D", true, false) as Skeleton3D
+	_skeleton = model.find_child("Skeleton3D", true, false) as Skeleton3D
 	for part_scene: PackedScene in parts:
-		_attach_part(part_scene, skeleton)
+		_attach_part(part_scene, _skeleton)
 	_prepare(model)
 
 	_player = AnimationPlayer.new()
@@ -55,6 +56,28 @@ func play(animation: StringName, loop: bool = true) -> void:
 		return
 	_player.get_animation(animation).loop_mode = Animation.LOOP_LINEAR if loop else Animation.LOOP_NONE
 	_player.play(animation, blend_time)
+
+
+## Plays a clip once from the start, sped up or slowed so it lasts `duration` seconds
+## (its natural length if 0). Restarts even if the clip is already playing.
+func play_once(animation: StringName, duration: float = 0.0, blend: float = 0.08) -> void:
+	if not _player.has_animation(animation):
+		push_warning("Missing animation: %s" % animation)
+		return
+	var clip := _player.get_animation(animation)
+	clip.loop_mode = Animation.LOOP_NONE
+	var speed := clip.length / duration if duration > 0.0 else 1.0
+	_player.play(animation, blend, speed)
+	_player.seek(0.0, true)
+
+
+## Holds `node` in a bone (e.g. a sword in "hand_r"), offset by `offset` in bone space.
+func attach_to_bone(node: Node3D, bone: StringName, offset: Transform3D) -> void:
+	var attachment := BoneAttachment3D.new()
+	attachment.bone_name = bone
+	_skeleton.add_child(attachment)
+	node.transform = offset
+	attachment.add_child(node)
 
 
 ## Moves every skinned mesh of a part onto the shared skeleton.

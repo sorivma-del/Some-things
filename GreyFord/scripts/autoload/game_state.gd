@@ -14,6 +14,7 @@ signal caught(herbs_lost: int)
 ## Short on-screen message (HUD shows it as a toast).
 signal notified(text: String)
 signal trust_changed(npc: String, value: int, delta: int)
+signal coins_changed(coins: int)
 
 enum Phase { DAY, NIGHT }
 
@@ -37,6 +38,13 @@ var caught_count: int = 0
 var trust: Dictionary[String, int] = {}
 ## Herb spots already picked today (spot ids).
 var picked_spots: PackedStringArray = []
+var coins: int = 0:
+	set(value):
+		coins = maxi(value, 0)
+		coins_changed.emit(coins)
+## Where Mara comes back after falling in a fight (the last campfire she rested at).
+var respawn_point: Vector3 = Vector3.ZERO
+var has_respawn_point: bool = false
 ## Free-form story flags for dialogues beyond the named ones below.
 var flags: Dictionary[String, bool] = {}
 ## True while a new game should open with the intro cutscene.
@@ -291,6 +299,8 @@ func new_game() -> void:
 	tomash_refused = false
 	play_intro = true
 	in_forest = false
+	coins = 0
+	has_respawn_point = false
 
 
 func has_save() -> bool:
@@ -360,6 +370,11 @@ func _setup_input() -> void:
 		&"move_left": KEY_A,
 		&"move_right": KEY_D,
 		&"interact": KEY_E,
+		&"attack": KEY_J,
+		&"block": KEY_SHIFT,
+		&"roll": KEY_SPACE,
+		&"lock_on": KEY_Q,
+		&"switch_target": KEY_TAB,
 	}
 	for action: StringName in bindings:
 		if not InputMap.has_action(action):
@@ -367,3 +382,9 @@ func _setup_input() -> void:
 		var event := InputEventKey.new()
 		event.physical_keycode = bindings[action]
 		InputMap.action_add_event(action, event)
+	# Right mouse button stays the camera orbit.
+	var mouse: Dictionary[StringName, MouseButton] = {&"attack": MOUSE_BUTTON_LEFT, &"lock_on": MOUSE_BUTTON_MIDDLE}
+	for action: StringName in mouse:
+		var click := InputEventMouseButton.new()
+		click.button_index = mouse[action]
+		InputMap.action_add_event(action, click)
