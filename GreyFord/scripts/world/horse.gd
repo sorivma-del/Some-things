@@ -62,13 +62,13 @@ func _add_tack() -> void:
 	cloth.albedo_color = Color(0.32, 0.08, 0.06)
 	cloth.roughness = 1.0
 	var seat := data.seat
-	Build.box(self, Vector3(0.62, 0.04, 0.95), seat + Vector3(0, 0.4, 0.02), cloth)
-	Build.box(self, Vector3(0.5, 0.1, 0.6), seat + Vector3(0, 0.45, 0.02), leather)
-	Build.box(self, Vector3(0.36, 0.14, 0.08), seat + Vector3(0, 0.55, -0.28), leather)
-	Build.box(self, Vector3(0.4, 0.1, 0.07), seat + Vector3(0, 0.53, 0.3), leather)
+	Build.box(self, Vector3(0.66, 0.04, 1.0), seat + Vector3(0, 0.58, 0.02), cloth)
+	Build.box(self, Vector3(0.5, 0.1, 0.6), seat + Vector3(0, 0.63, 0.02), leather)
+	Build.box(self, Vector3(0.36, 0.14, 0.08), seat + Vector3(0, 0.73, -0.28), leather)
+	Build.box(self, Vector3(0.4, 0.1, 0.07), seat + Vector3(0, 0.71, 0.3), leather)
 	for side: float in [-1.0, 1.0]:
-		Build.box(self, Vector3(0.03, 0.5, 0.05), seat + Vector3(side * 0.27, 0.2, 0.0), leather)
-		Build.box(self, Vector3(0.1, 0.03, 0.1), seat + Vector3(side * 0.3, -0.06, 0.0), leather)
+		Build.box(self, Vector3(0.03, 0.6, 0.05), seat + Vector3(side * 0.3, 0.3, 0.0), leather)
+		Build.box(self, Vector3(0.1, 0.03, 0.1), seat + Vector3(side * 0.33, 0.0, 0.0), leather)
 
 
 ## Rider's bounce and forward lean for the current gait (used by Player while mounted).
