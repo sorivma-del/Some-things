@@ -12,6 +12,10 @@ const BOUNDS := Rect2(-28.0, -33.0, 56.0, 56.0)
 const PALISADE_Z := 22.0
 const GATE_HALF_WIDTH := 2.9
 const CHURCH_POS := Vector2(0.0, -19.0)
+## Barrel stacks to duck behind: x, z, facing (degrees).
+const BARRELS: Array[Vector3] = [Vector3(-4.6, -8.6, 20.0), Vector3(6.8, 5.8, -30.0), Vector3(-6.4, 9.0, 60.0), Vector3(9.0, -12.5, 10.0)]
+## Tall weed patches to crouch in: x, z, radius.
+const TALL_WEEDS: Array[Vector3] = [Vector3(-18.0, 1.5, 2.2), Vector3(17.5, -12.0, 2.2), Vector3(-5.5, 15.5, 2.0), Vector3(19.0, 15.0, 2.0)]
 ## Spots kept clear of grass so it never hides the people standing there: x, z, radius.
 const CLEAR_SPOTS: Array[Vector3] = [Vector3(2.2, 20.2, 2.5), Vector3(-2.45, -0.64, 2.0)]
 const DRY_GRASS := Color(0.5, 0.48, 0.34)
@@ -68,6 +72,10 @@ func _build_house(pos: Vector2, depth: int, lit: bool, patient: String) -> void:
 	var front := depth * KitBuilder.MODULE * 0.5
 	if lit:
 		Effects.smoke(house, Vector3(1.6, 7.7, -front + 1.5))
+		if pos != HOUSES[0]["pos"]:  # Helga's own door is where Mara sleeps.
+			var hide := HideHouse.new()
+			hide.position = Vector3(0.0, 1.0, front + 0.5)
+			house.add_child(hide)
 		var glow := OmniLight3D.new()
 		glow.light_color = KitBuilder.WINDOW_GLOW
 		glow.light_energy = 1.2
@@ -105,6 +113,11 @@ func _build_props() -> void:
 			Build.static_box(crate, Vector3(1.08, 1.06, 1.08), Vector3(0.0, 0.53, 0.0))
 	for i: int in 3:
 		KitBuilder.piece(self, "Prop_WoodenFence_Single", Vector3(-17.5 + i * 2.05, 0.0, 13.6), 8.0 * i)
+	# Places to hide from the night hunters: barrels and tall weeds.
+	for spot: Vector3 in BARRELS:
+		_build_barrels(Vector3(spot.x, 0.0, spot.y), spot.z)
+	for patch: Vector3 in TALL_WEEDS:
+		_build_weeds(Vector2(patch.x, patch.y), patch.z)
 
 
 func _build_palisade() -> void:
@@ -200,6 +213,39 @@ func _build_bounds() -> void:
 	Build.static_box(self, Vector3(1.0, 12.0, b.size.y), Vector3(b.position.x, 3.0, centre.y))
 	Build.static_box(self, Vector3(1.0, 12.0, b.size.y), Vector3(b.end.x, 3.0, centre.y))
 	Build.static_box(self, Vector3(b.size.x, 12.0, 1.0), Vector3(centre.x, 3.0, b.position.y))
+
+
+func _build_barrels(pos: Vector3, facing: float) -> void:
+	var root := Node3D.new()
+	root.position = pos
+	root.rotation_degrees.y = facing
+	add_child(root)
+	var wood := Build.bark_material(Color(0.36, 0.28, 0.22), Vector3(pos.x, 0.0, pos.z))
+	var hoop := Build.material(Color(0.14, 0.13, 0.13))
+	for offset: Vector3 in [Vector3(-0.45, 0, 0), Vector3(0.45, 0, 0.1), Vector3(0.0, 0, -0.55)]:
+		Build.cylinder(root, 0.38, 1.1, offset + Vector3(0, 0.55, 0), wood, 10)
+		for y: float in [0.2, 0.9]:
+			Build.cylinder(root, 0.4, 0.06, offset + Vector3(0, y, 0), hoop, 10)
+		Build.static_cylinder(root, 0.38, 1.1, offset + Vector3(0, 0.55, 0))
+	var zone := HideZone.new()
+	zone.concealment = 0.8
+	zone.size = Vector3(2.6, 1.4, 2.6)
+	root.add_child(zone)
+
+
+func _build_weeds(centre: Vector2, radius: float) -> void:
+	var tall := _nature_mesh("Grass_Common_Tall")
+	var blades: Array = []
+	for i: int in 80:
+		var p := centre + Vector2(_rng.randf_range(-radius, radius), _rng.randf_range(-radius, radius))
+		blades.append(Transform3D(Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3.ONE * _rng.randf_range(0.8, 1.1)),
+				Vector3(p.x, _terrain.height_at(p.x, p.y), p.y)))
+	_multimesh(tall, blades)
+	var zone := HideZone.new()
+	zone.concealment = 0.75
+	zone.size = Vector3(radius * 2.0, 1.6, radius * 2.0)
+	zone.position = Vector3(centre.x, _terrain.height_at(centre.x, centre.y), centre.y)
+	add_child(zone)
 
 
 ## Wind ambience and low mist drifting in from the forest edge.

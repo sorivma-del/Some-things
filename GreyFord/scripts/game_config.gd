@@ -24,3 +24,9 @@ extends Resource
 @export var night_hunters_per_night: PackedInt32Array = [0, 2]
 ## Herbs lost when caught (all of them if negative).
 @export var herbs_lost_when_caught: int = -1
+
+@export_group("Trust")
+## Starting trust (0-100) per villager.
+@export var trust_start: Dictionary[String, int] = {"helga": 55, "tomash": 30, "anka": 60, "yan": 20, "olbrecht": 15}
+## Trust lost with every villager when Mara is caught.
+@export var trust_lost_when_caught: int = 8

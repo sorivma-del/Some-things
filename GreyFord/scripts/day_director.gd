@@ -9,9 +9,17 @@ const HOME_DOOR := Vector3(-8.6, 0.0, -4.3)  ## Helga's house, where Mara sleeps
 const MORNING_SPOT := Vector3(-7.4, 0.0, -3.4)
 const NIGHT_START := Vector3(2.4, 0.0, 3.0)
 const NIGHT_NAMES: PackedStringArray = ["Первая ночь", "Вторая ночь"]
+const GUARD_SCENE: PackedScene = preload("res://scenes/guard.tscn")
+const HUNTER_VIEW_DISTANCE := 9.0  ## Shorter than in the forest: it is dark.
+## Night patrols through the village streets, around the square and Helga's door.
+static var HUNTER_ROUTES: Array[PackedVector3Array] = [
+	PackedVector3Array([Vector3(-3, 0, -10), Vector3(-15, 0, -11), Vector3(-18, 0, -1), Vector3(-7, 0, 3)]),
+	PackedVector3Array([Vector3(4, 0, 16), Vector3(9, 0, 4), Vector3(4, 0, -7), Vector3(-1, 0, 6)]),
+]
 
 var _busy: bool = false
 var _bed: Interactable
+var _hunters: Array[Guard] = []
 
 
 func _ready_bed() -> void:
@@ -63,7 +71,8 @@ func _end_day() -> void:
 	_player().call(&"teleport", _on_ground(NIGHT_START), Vector3(-1.0, 0.0, -0.4))
 	_snap_camera()
 	_bed.enabled = true
-	_set_objective("Дойти до дома Хельги и лечь спать")
+	_spawn_hunters()
+	_set_objective("Дойти до дома Хельги и лечь спать" + ("  ·  берегись фонарей" if not _hunters.is_empty() else ""))
 	await Transition.fade_in(1.4)
 	GameState.unlock_controls()
 	_busy = false
@@ -76,7 +85,26 @@ func _sleep() -> void:
 	_bed.enabled = false
 	GameState.lock_controls()
 	await Transition.fade_out(1.2)
+	await _start_morning()
+
+
+## Caught by a hunter: led to Helga's door, herbs taken, trust lost; the night is over.
+func _on_hunter_caught() -> void:
+	if GameState.phase != GameState.Phase.NIGHT or _busy:
+		return
+	_busy = true
+	_bed.enabled = false
+	GameState.lock_controls()
+	GameState.register_caught()
+	await Transition.card(PackedStringArray(["Поймали",
+			"Люди старосты довели Мару до порога Хельги. Травы забрали.",
+			"Утром об этом будет знать вся деревня."]), 1.6)
+	await _start_morning()
+
+
+func _start_morning() -> void:
 	_set_objective("")
+	_clear_hunters()
 	GameState.begin_day()
 	_player().call(&"teleport", _on_ground(MORNING_SPOT), Vector3(1.0, 0.0, 0.6))
 	_snap_camera()
@@ -106,6 +134,28 @@ func _morning_card() -> PackedStringArray:
 		3:
 			lines.append("Последний день. К рассвету приедут люди барона.")
 	return lines
+
+
+func _spawn_hunters() -> void:
+	var per_night := GameState.config.night_hunters_per_night
+	var count := per_night[clampi(GameState.day - 1, 0, per_night.size() - 1)]
+	for i: int in mini(count, HUNTER_ROUTES.size()):
+		var hunter := GUARD_SCENE.instantiate() as Guard
+		var route := PackedVector3Array()
+		for point: Vector3 in HUNTER_ROUTES[i]:
+			route.append(_on_ground(point))
+		hunter.route = route
+		hunter.view_distance = HUNTER_VIEW_DISTANCE
+		hunter.position = route[0]
+		get_parent().add_child(hunter)
+		hunter.caught_player.connect(_on_hunter_caught)
+		_hunters.append(hunter)
+
+
+func _clear_hunters() -> void:
+	for hunter: Guard in _hunters:
+		hunter.queue_free()
+	_hunters.clear()
 
 
 func _set_objective(text: String) -> void:

@@ -28,6 +28,9 @@ var hidden: bool = false:
 		_model.visible = not value
 		hidden_changed.emit(value)
 
+## Standing still behind a door (HideHouse): input does not move her.
+var frozen: bool = false
+
 var _cover: Array[HideZone] = []
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _walk_target: Vector3
@@ -59,7 +62,7 @@ func _physics_process(delta: float) -> void:
 			arrived.emit()
 		else:
 			direction = to.normalized()
-	elif not GameState.controls_locked:
+	elif not GameState.controls_locked and not frozen:
 		var input := Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 		direction = _camera_relative(input)
 
@@ -96,6 +99,8 @@ func teleport(point: Vector3, facing: Vector3 = Vector3.ZERO) -> void:
 	global_position = point
 	velocity = Vector3.ZERO
 	_walking_to = false
+	frozen = false
+	hidden = false
 	if facing != Vector3.ZERO:
 		face_point(point + facing)
 

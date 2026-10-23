@@ -13,6 +13,7 @@ signal sick_changed
 signal caught(herbs_lost: int)
 ## Short on-screen message (HUD shows it as a toast).
 signal notified(text: String)
+signal trust_changed(npc: String, value: int, delta: int)
 
 enum Phase { DAY, NIGHT }
 
@@ -32,6 +33,8 @@ var medicine: int = 0
 var sick_health: Dictionary[String, int] = {}
 var treated_today: Dictionary[String, bool] = {}
 var caught_count: int = 0
+## Villager id -> trust in Mara, 0..100.
+var trust: Dictionary[String, int] = {}
 ## Herb spots already picked today (spot ids).
 var picked_spots: PackedStringArray = []
 ## Free-form story flags for dialogues beyond the named ones below.
@@ -191,6 +194,31 @@ func is_alive(patient: String) -> bool:
 #endregion
 
 
+#region Trust
+
+const NPC_NAMES: Dictionary[String, String] = {
+	"helga": "Хельга", "tomash": "Томаш", "anka": "Анка", "yan": "Ян", "olbrecht": "Ольбрехт",
+}
+
+
+func get_trust(npc: String) -> int:
+	return trust.get(npc, 0)
+
+
+## Called from dialogue and game events. Shows a short notification.
+func change_trust(npc: String, delta: int) -> void:
+	if delta == 0 or not trust.has(npc):
+		return
+	var before := trust[npc]
+	trust[npc] = clampi(before + delta, 0, 100)
+	var actual := trust[npc] - before
+	if actual != 0:
+		trust_changed.emit(npc, trust[npc], actual)
+		notified.emit("%s  %s%d доверия" % [NPC_NAMES.get(npc, npc), "+" if actual > 0 else "−", absi(actual)])
+
+#endregion
+
+
 #region Flags and capture
 
 func has_flag(flag: String) -> bool:
@@ -211,6 +239,8 @@ func register_caught() -> void:
 		lost += take
 	set_flag("caught_%d" % caught_count)
 	inventory_changed.emit()
+	for npc: String in ["helga", "tomash", "yan"]:
+		change_trust(npc, -config.trust_lost_when_caught)
 	caught.emit(lost)
 
 #endregion
@@ -253,6 +283,7 @@ func new_game() -> void:
 	sick_health = config.sick_start_health.duplicate()
 	treated_today.clear()
 	caught_count = 0
+	trust = config.trust_start.duplicate()
 	picked_spots.clear()
 	flags.clear()
 	talked_helga = false
@@ -293,6 +324,7 @@ func to_dict() -> Dictionary:
 		"medicine": medicine,
 		"sick_health": sick_health,
 		"caught_count": caught_count,
+		"trust": trust,
 		"flags": flags,
 		"talked_helga": talked_helga,
 		"tomash_refused": tomash_refused,
@@ -309,6 +341,8 @@ func from_dict(data: Dictionary) -> void:
 	for patient: String in (data.get("sick_health", {}) as Dictionary):
 		sick_health[patient] = int(data["sick_health"][patient])
 	caught_count = int(data.get("caught_count", 0))
+	for npc: String in (data.get("trust", {}) as Dictionary):
+		trust[npc] = int(data["trust"][npc])
 	for flag: String in (data.get("flags", {}) as Dictionary):
 		flags[flag] = bool(data["flags"][flag])
 	talked_helga = bool(data.get("talked_helga", false))

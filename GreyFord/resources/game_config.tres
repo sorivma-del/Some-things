@@ -17,3 +17,11 @@ max_health = 3
 forest_guards_per_day = PackedInt32Array(1, 2, 3)
 night_hunters_per_night = PackedInt32Array(0, 2)
 herbs_lost_when_caught = -1
+trust_start = Dictionary[String, int]({
+"anka": 60,
+"helga": 55,
+"olbrecht": 15,
+"tomash": 30,
+"yan": 20
+})
+trust_lost_when_caught = 8
