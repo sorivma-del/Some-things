@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MerchantData" format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/merchant_data.gd" id="1_qc07y"]
+
+[resource]
+script = ExtResource("1_qc07y")
+id = "peddler"
+display_name = "Бродячий торговец Сава"
+stock_ids = PackedStringArray("bandage", "bread", "quilted_coat", "woodsman_axe", "wolf_pelt")
+stock_counts = PackedInt32Array(3, 4, 1, 1, 0)
+buys_types = Array[int]([0, 1, 2, 3, 4, 5, 6])
+buy_factor_low_trust = 1.5
+buy_factor_high_trust = 1.1
+sell_factor_low_trust = 0.3
+sell_factor_high_trust = 0.5

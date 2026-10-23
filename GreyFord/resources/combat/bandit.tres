@@ -20,12 +20,12 @@ telegraph_color = Color(1, 0.55, 0.15, 1)
 
 [sub_resource type="Resource" id="loot"]
 script = ExtResource("3_loot")
-coins_min = 6
-coins_max = 14
+coins_min = 10
+coins_max = 18
 max_items = 2
-item_ids = PackedStringArray("elecampane", "wormwood")
-item_chances = PackedFloat32Array(0.4, 0.3)
-item_counts = PackedInt32Array(1, 1)
+item_ids = PackedStringArray("copper_ring", "bandage", "elecampane", "wormwood")
+item_chances = PackedFloat32Array(0.3, 0.35, 0.3, 0.25)
+item_counts = PackedInt32Array(1, 1, 1, 1)
 
 [resource]
 script = ExtResource("1_data")

@@ -111,6 +111,18 @@ GreyFord/
   `GameState.resolve_parley()` пишет флаг `<id>_<исход>`. Лут — `LootDrop` → `GameState.add_loot()`.
 - Автотест `tools/tests/enemy_test.gd`.
 
+## Экономика (шаг 3)
+
+- `Item` / `ItemCatalog` (`resources/items/catalog.tres`) — все предметы, травы и отвар тоже.
+  `GameState.count/give/take/bag()` — единая сумка (травы и отвар в своих счётчиках),
+  `equipment` (weapon/shield/armor), `equip/unequip`, сигнал `equipment_changed`.
+- `MerchantData` (`resources/merchants/*.tres`) — ассортимент и множители цен от доверия.
+  `GameState.buy/sell/buy_price/sell_price/stock`; запас пополняется в `begin_day()`.
+- Диалог торговца вызывает `GameState.open_trade(id)` → `TradeWindow` (после диалога).
+  `InventoryWindow` — сумка по I. Оба — `GameWindow` в HUD, блокируют управление.
+- `PlayerCombat.attack_damage()`, броня и щит из экипировки; H — `use_item` лучшего бинта.
+- Таблица баланса — `docs/economy.md`. Автотест `tools/tests/trade_test.gd`.
+
 ## Правила
 
 - Только Godot 4 API. Никаких `yield`, `onready var` без `@`, `KinematicBody` и т.п.

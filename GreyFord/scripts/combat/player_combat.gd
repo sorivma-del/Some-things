@@ -19,8 +19,8 @@ const GROUP := &"player_combat"
 ## Nodes Mara can lock onto. They provide `lock_name`, `can_be_locked()` and `health_ratio()`.
 const TARGET_GROUP := &"lock_target"
 const ATTACK_CLIPS: Array[StringName] = [&"Sword_Regular_A", &"Sword_Regular_B"]
-const SWORD := preload("res://resources/models/props/Sword_Bronze.gltf")
-const SHIELD := preload("res://resources/models/props/Shield_Wooden.gltf")
+## Which hand holds each equipment slot's model.
+const HOLD_BONES: Dictionary[String, StringName] = {"weapon": &"hand_r", "shield": &"hand_l"}
 const ACCELERATION := 16.0
 const TURN_SPEED := 12.0
 
@@ -49,6 +49,8 @@ var _since_spend: float = 100.0
 var _spawn_point: Vector3
 var _sfx := AudioStreamPlayer3D.new()
 var _sounds: Dictionary[StringName, AudioStreamWAV] = {}
+## Slot -> the model currently held for it.
+var _held: Dictionary[String, Node3D] = {}
 
 
 func _ready() -> void:
@@ -85,15 +87,65 @@ func _ready() -> void:
 	_body.add_child.call_deferred(_sfx)
 	_sounds = {&"swing": ProceduralSound.swing(), &"hit": ProceduralSound.hit(), &"block": ProceduralSound.block()}
 	_arm.call_deferred()
+	GameState.equipment_changed.connect(_arm)
 
 
-## Sword in the right hand, shield on the left forearm.
+## Puts the equipped weapon in the right hand and the shield on the left forearm.
 func _arm() -> void:
-	var sword := SWORD.instantiate() as Node3D
-	_model.attach_to_bone(sword, &"hand_r", Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0.07, 0.02)))
-	var shield := SHIELD.instantiate() as Node3D
-	var shield_basis := Basis(Vector3.UP, -PI * 0.5) * Basis(Vector3.RIGHT, PI * 0.5)
-	_model.attach_to_bone(shield, &"hand_l", Transform3D(shield_basis.scaled(Vector3.ONE * 0.85), Vector3(0.0, 0.0, -0.06)))
+	for slot: String in HOLD_BONES:
+		if _held.has(slot):
+			_held[slot].get_parent().queue_free()  # The BoneAttachment3D holding it.
+			_held.erase(slot)
+		var item := GameState.equipped(slot)
+		if item and item.model:
+			var node := item.model.instantiate() as Node3D
+			_model.attach_to_bone(node, HOLD_BONES[slot], item.hold_offset)
+			_held[slot] = node
+
+
+## Light-attack damage: the weapon's, or bare hands from HeroCombatData.
+func attack_damage() -> float:
+	var weapon := GameState.equipped("weapon")
+	return weapon.damage if weapon else data.damage
+
+
+func _defense() -> float:
+	var armor := GameState.equipped("armor")
+	return armor.defense if armor else 0.0
+
+
+func _block_cost_factor() -> float:
+	var shield := GameState.equipped("shield")
+	return shield.block_cost_factor if shield else 1.0
+
+
+func _has_shield() -> bool:
+	return GameState.equipped("shield") != null
+
+
+## Uses the strongest healing item in the bag (bandage, bread).
+func _use_heal() -> void:
+	if health >= data.max_health:
+		return
+	var best: Item = null
+	for id: String in GameState.bag():
+		var found := GameState.item(id)
+		if found and found.type == Item.Type.CONSUMABLE and found.heal > 0.0 and (best == null or found.heal > best.heal):
+			best = found
+	if best == null:
+		GameState.notified.emit("Нечем перевязаться")
+		return
+	use_item(best.id)
+
+
+## Eats or applies a consumable from the bag.
+func use_item(id: String) -> void:
+	var found := GameState.item(id)
+	if found == null or found.heal <= 0.0 or state == State.DEAD or not GameState.take(id):
+		return
+	health = minf(health + found.heal, data.max_health)
+	health_changed.emit(health, data.max_health)
+	GameState.notified.emit("%s  +%d здоровья" % [found.display_name, roundi(found.heal)])
 
 
 ## Movement, facing and animation for this physics frame. `direction` is the input
@@ -108,7 +160,7 @@ func drive(direction: Vector3, delta: float) -> void:
 	var goal := Vector3.ZERO
 	match state:
 		State.NORMAL:
-			blocking = _can_act() and Input.is_action_pressed(&"block") and stamina > 0.0
+			blocking = _can_act() and _has_shield() and Input.is_action_pressed(&"block") and stamina > 0.0
 			if blocking:
 				_spend(data.block_hold_cost * delta)
 			goal = direction * data.move_speed * (data.block_move_factor if blocking else 1.0)
@@ -168,6 +220,8 @@ func restore() -> void:
 #region Input and actions
 
 func _read_input(direction: Vector3) -> void:
+	if Input.is_action_just_pressed(&"heal") and state == State.NORMAL:
+		_use_heal()
 	if Input.is_action_just_pressed(&"lock_on"):
 		_set_target(null if is_instance_valid(target) else _find_target())
 	if Input.is_action_just_pressed(&"switch_target") and is_instance_valid(target):
@@ -203,7 +257,7 @@ func _start_attack(index: int) -> void:
 func _update_attack() -> void:
 	if _attack_phase == AttackPhase.WINDUP and _state_time >= data.windup:
 		_attack_phase = AttackPhase.ACTIVE
-		_hitbox.begin_swing(data.damage, data.knockback)
+		_hitbox.begin_swing(attack_damage(), data.knockback)
 		_play_sound(&"swing")
 	if _attack_phase == AttackPhase.ACTIVE and _state_time >= data.windup + data.active:
 		_attack_phase = AttackPhase.RECOVERY
@@ -256,7 +310,7 @@ func _on_hit(info: HitInfo) -> void:
 		info.result = HitInfo.Result.IGNORED
 		return
 	if blocking and state == State.NORMAL and _forward().dot(-info.direction) >= cos(deg_to_rad(data.block_angle_degrees)):
-		var cost := data.block_hit_cost * info.damage / 10.0
+		var cost := data.block_hit_cost * info.damage / 10.0 * _block_cost_factor()
 		if stamina >= cost:
 			_spend(cost)
 			_take_damage(info.damage * data.block_damage_factor)
@@ -272,7 +326,7 @@ func _on_hit(info: HitInfo) -> void:
 		_set_state(State.GUARD_BROKEN)
 		_model.play_once(&"Idle_Shield_Break", data.guard_break_time)
 
-	_take_damage(info.damage)
+	_take_damage(info.damage * (1.0 - _defense()))
 	_knockback = info.direction * info.knockback * data.hurt_knockback_scale
 	info.result = HitInfo.Result.HIT
 	_play_sound(&"hit")

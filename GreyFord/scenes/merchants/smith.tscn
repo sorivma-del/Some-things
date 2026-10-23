@@ -1,0 +1,50 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/npc.gd" id="1_npc"]
+[ext_resource type="Script" path="res://scripts/character_model.gd" id="2_model"]
+[ext_resource type="Script" path="res://scripts/interactable.gd" id="3_interact"]
+[ext_resource type="Resource" path="res://dialogues/merchants.dialogue" id="4_dialogue"]
+[ext_resource type="PackedScene" path="res://resources/models/characters/base/Superhero_Male_FullBody.gltf" id="5_body"]
+[ext_resource type="PackedScene" path="res://resources/models/characters/outfits/Male_Ranger.gltf" id="6_outfit"]
+[ext_resource type="PackedScene" path="res://resources/models/characters/hair/Hair_Beard.gltf" id="7_hair"]
+[ext_resource type="PackedScene" path="res://resources/models/props/Anvil.gltf" id="p0"]
+[ext_resource type="PackedScene" path="res://resources/models/props/WeaponStand.gltf" id="p1"]
+
+[sub_resource type="CapsuleShape3D" id="shape"]
+radius = 0.35
+height = 1.75
+
+[sub_resource type="SphereShape3D" id="reach"]
+radius = 1.4
+
+[node name="Smith" type="StaticBody3D" groups=["merchants"]]
+script = ExtResource("1_npc")
+dialogue = ExtResource("4_dialogue")
+cue = "smith"
+idle_animation = &"Idle_FoldArms"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.88, 0)
+shape = SubResource("shape")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("2_model")
+base_scene = ExtResource("5_body")
+parts = Array[PackedScene]([ExtResource("6_outfit"), ExtResource("7_hair")])
+head_only_parts = PackedStringArray("Superhero_Male")
+tint = Color(0.75, 0.72, 0.7, 1)
+default_animation = &"Idle_FoldArms"
+
+[node name="Interactable" type="Area3D" parent="."]
+position = Vector3(0, 0.9, 0)
+script = ExtResource("3_interact")
+prompt = "Поговорить с кузнецом"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Interactable"]
+shape = SubResource("reach")
+
+[node name="Anvil" parent="." instance=ExtResource("p0")]
+transform = Transform3D(0.0000, 0, 1.0000, 0, 1, 0, -1.0000, 0, 0.0000, 1.1, 0, 0.2)
+
+[node name="WeaponStand" parent="." instance=ExtResource("p1")]
+transform = Transform3D(0.9397, 0, 0.3420, 0, 1, 0, -0.3420, 0, 0.9397, -1.2, 0, -0.4)

@@ -25,10 +25,10 @@ hop_back_speed = 5.0
 script = ExtResource("3_loot")
 coins_min = 0
 coins_max = 2
-max_items = 1
-item_ids = PackedStringArray("burnet")
-item_chances = PackedFloat32Array(0.25)
-item_counts = PackedInt32Array(1)
+max_items = 2
+item_ids = PackedStringArray("wolf_pelt", "burnet")
+item_chances = PackedFloat32Array(0.7, 0.25)
+item_counts = PackedInt32Array(1, 1)
 
 [resource]
 script = ExtResource("1_data")

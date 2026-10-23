@@ -38,10 +38,10 @@ weight = 1.5
 script = ExtResource("3_loot")
 coins_min = 30
 coins_max = 50
-max_items = 2
-item_ids = PackedStringArray("wormwood", "elecampane", "burnet")
-item_chances = PackedFloat32Array(1.0, 1.0, 0.5)
-item_counts = PackedInt32Array(2, 2, 1)
+max_items = 3
+item_ids = PackedStringArray("copper_ring", "bound_shield", "burnet")
+item_chances = PackedFloat32Array(1.0, 0.5, 1.0)
+item_counts = PackedInt32Array(2, 1, 2)
 
 [resource]
 script = ExtResource("1_data")

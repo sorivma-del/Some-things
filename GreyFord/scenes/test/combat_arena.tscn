@@ -12,6 +12,9 @@
 [ext_resource type="Script" path="res://scripts/combat/sparring_partner.gd" id="10_partner"]
 [ext_resource type="Resource" path="res://resources/combat/training_dummy.tres" id="11_dummy_data"]
 [ext_resource type="Resource" path="res://resources/combat/sparring_partner.tres" id="12_partner_data"]
+[ext_resource type="PackedScene" path="res://scenes/merchants/smith.tscn" id="13_smith"]
+[ext_resource type="PackedScene" path="res://scenes/merchants/herbwife.tscn" id="14_herbwife"]
+[ext_resource type="PackedScene" path="res://scenes/merchants/peddler.tscn" id="15_peddler"]
 
 [node name="CombatArena" type="Node3D"]
 script = ExtResource("1_arena")
@@ -44,6 +47,15 @@ data = ExtResource("11_dummy_data")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -8)
 script = ExtResource("10_partner")
 data = ExtResource("12_partner_data")
+
+[node name="Smith" parent="." instance=ExtResource("13_smith")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 11.5, 0, -8)
+
+[node name="Herbwife" parent="." instance=ExtResource("14_herbwife")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 11.5, 0, -2.5)
+
+[node name="Peddler" parent="." instance=ExtResource("15_peddler")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 11.5, 0, 2)
 
 [node name="Player" parent="." instance=ExtResource("4_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 8)

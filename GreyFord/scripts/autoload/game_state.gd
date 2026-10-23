@@ -17,11 +17,21 @@ signal trust_changed(npc: String, value: int, delta: int)
 signal coins_changed(coins: int)
 ## A bandit's parley ended: outcome is "bribe", "persuade" or "fight".
 signal parley_resolved(enemy_id: String, outcome: String)
+signal equipment_changed
+## A merchant's dialogue asked for the trade window.
+signal trade_requested(merchant_id: String)
 
 enum Phase { DAY, NIGHT }
 
 const HERO_STATS: CharacterStats = preload("res://resources/mara_stats.tres")
 const CONFIG: GameConfig = preload("res://resources/game_config.tres")
+const ITEMS: ItemCatalog = preload("res://resources/items/catalog.tres")
+const MERCHANTS: Dictionary[String, MerchantData] = {
+	"smith": preload("res://resources/merchants/smith.tres"),
+	"herbwife": preload("res://resources/merchants/herbwife.tres"),
+	"peddler": preload("res://resources/merchants/peddler.tres"),
+}
+const EQUIPMENT_SLOTS: PackedStringArray = ["weapon", "shield", "armor"]
 const SAVE_PATH := "user://greyford_save.json"
 const SAVE_VERSION := 1
 
@@ -47,8 +57,12 @@ var coins: int = 0:
 ## Where Mara comes back after falling in a fight (the last campfire she rested at).
 var respawn_point: Vector3 = Vector3.ZERO
 var has_respawn_point: bool = false
-## Things picked up that are not herbs (item id -> count); step 3 gives them names and use.
+## Mara's bag apart from herbs and the remedy (item id -> count). See count()/give()/take().
 var items: Dictionary[String, int] = {}
+## Slot ("weapon", "shield", "armor") -> item id ("" = empty). Worn items stay in `items`.
+var equipment: Dictionary[String, String] = {}
+## Merchant id -> {item id: count left}; refilled from MerchantData every morning.
+var merchant_stock: Dictionary[String, Dictionary] = {}
 ## The enemy Mara is talking down right now, and its price and difficulty (for the dialogue).
 var parley_enemy: String = ""
 var parley_bribe: int = 0
@@ -128,6 +142,7 @@ func begin_day() -> void:
 	slots_used = 0
 	phase = Phase.DAY
 	picked_spots.clear()
+	merchant_stock.clear()  # Traders restock overnight.
 	time_changed.emit()
 	save_game()
 
@@ -157,19 +172,13 @@ func add_herb(id: String, spot_id: String) -> void:
 	notified.emit("+1  %s" % herb_name(id))
 
 
-## Loot from a fallen enemy or a found cache: coins, herbs or items. Returns a line for the HUD.
-func add_loot(id: String, count: int) -> String:
+## Loot from a fallen enemy or a found cache: coins or items. Returns a line for the HUD.
+func add_loot(id: String, amount: int) -> String:
 	if id == "coins":
-		coins += count
-		return "+%d  монет" % count
-	if config.herb_ids.has(id):
-		herbs[id] = herbs.get(id, 0) + count
-		inventory_changed.emit()
-		return "+%d  %s" % [count, herb_name(id)]
-	items[id] = items.get(id, 0) + count
-	inventory_changed.emit()
-	return "+%d  %s" % [count, id]
-
+		coins += amount
+		return "+%d  монет" % amount
+	give(id, amount)
+	return "+%d  %s" % [amount, item_name(id)]
 
 ## Doses that can be brewed from the herbs in hand (one of each herb per dose).
 func brewable_doses() -> int:
@@ -228,6 +237,7 @@ func is_alive(patient: String) -> bool:
 
 const NPC_NAMES: Dictionary[String, String] = {
 	"helga": "Хельга", "tomash": "Томаш", "anka": "Анка", "yan": "Ян", "olbrecht": "Ольбрехт",
+	"smith": "Кузнец", "herbwife": "Травница", "peddler": "Сава",
 }
 
 
@@ -272,6 +282,145 @@ func register_caught() -> void:
 	for npc: String in ["helga", "tomash", "yan"]:
 		change_trust(npc, -config.trust_lost_when_caught)
 	caught.emit(lost)
+
+#endregion
+
+
+#region Items, equipment and trade
+
+func item(id: String) -> Item:
+	return ITEMS.find(id)
+
+
+func item_name(id: String) -> String:
+	var found := item(id)
+	return found.display_name if found else id
+
+
+## How many Mara carries. Herbs and the remedy live in their own counters (brewing,
+## healing the sick); everything else in `items`.
+func count(id: String) -> int:
+	if config.herb_ids.has(id):
+		return herbs.get(id, 0)
+	if id == "medicine":
+		return medicine
+	return items.get(id, 0)
+
+
+func give(id: String, amount: int = 1) -> void:
+	if config.herb_ids.has(id):
+		herbs[id] = herbs.get(id, 0) + amount
+	elif id == "medicine":
+		medicine += amount
+	else:
+		items[id] = items.get(id, 0) + amount
+	inventory_changed.emit()
+
+
+func take(id: String, amount: int = 1) -> bool:
+	if count(id) < amount:
+		return false
+	if config.herb_ids.has(id):
+		herbs[id] -= amount
+	elif id == "medicine":
+		medicine -= amount
+	else:
+		items[id] -= amount
+		if items[id] <= 0:
+			items.erase(id)
+	inventory_changed.emit()
+	return true
+
+
+## Everything in the bag, herbs and remedy included (id -> count, no zeros).
+func bag() -> Dictionary[String, int]:
+	var result: Dictionary[String, int] = {}
+	for id: String in config.herb_ids:
+		if count(id) > 0:
+			result[id] = count(id)
+	if medicine > 0:
+		result["medicine"] = medicine
+	for id: String in items:
+		result[id] = items[id]
+	return result
+
+
+func equipped(slot: String) -> Item:
+	return item(equipment.get(slot, ""))
+
+
+func is_equipped(id: String) -> bool:
+	return equipment.values().has(id)
+
+
+## Copies of `id` that are not being worn (what can be sold).
+func spare(id: String) -> int:
+	return count(id) - (1 if is_equipped(id) else 0)
+
+
+func equip(id: String) -> void:
+	var found := item(id)
+	if found == null or found.slot().is_empty() or count(id) <= 0:
+		return
+	equipment[found.slot()] = id
+	equipment_changed.emit()
+
+
+func unequip(slot: String) -> void:
+	equipment[slot] = ""
+	equipment_changed.emit()
+
+
+## Called from a merchant's dialogue ("Торговать").
+func open_trade(merchant_id: String) -> void:
+	trade_requested.emit(merchant_id)
+
+
+func stock(merchant_id: String) -> Dictionary:
+	if not merchant_stock.has(merchant_id):
+		restock(merchant_id)
+	return merchant_stock[merchant_id]
+
+
+func restock(merchant_id: String) -> void:
+	var data := MERCHANTS[merchant_id]
+	var goods := {}
+	for i: int in data.stock_ids.size():
+		goods[data.stock_ids[i]] = data.stock_counts[i] if i < data.stock_counts.size() else 1
+	merchant_stock[merchant_id] = goods
+
+
+func buy_price(merchant_id: String, id: String) -> int:
+	return MERCHANTS[merchant_id].buy_price(item(id), get_trust(merchant_id))
+
+
+func sell_price(merchant_id: String, id: String) -> int:
+	return MERCHANTS[merchant_id].sell_price(item(id), get_trust(merchant_id))
+
+
+func buy(merchant_id: String, id: String) -> bool:
+	var goods := stock(merchant_id)
+	var price := buy_price(merchant_id, id)
+	if int(goods.get(id, 0)) <= 0 or coins < price:
+		return false
+	goods[id] = int(goods[id]) - 1
+	coins -= price
+	give(id)
+	notified.emit("Куплено: %s  −%d" % [item_name(id), price])
+	return true
+
+
+func sell(merchant_id: String, id: String) -> bool:
+	var found := item(id)
+	if found == null or not MERCHANTS[merchant_id].buys(found) or spare(id) <= 0:
+		return false
+	var price := sell_price(merchant_id, id)
+	take(id)
+	var goods := stock(merchant_id)
+	goods[id] = int(goods.get(id, 0)) + 1
+	coins += price
+	notified.emit("Продано: %s  +%d" % [found.display_name, price])
+	return true
 
 #endregion
 
@@ -338,9 +487,18 @@ func new_game() -> void:
 	tomash_refused = false
 	play_intro = true
 	in_forest = false
-	coins = 0
+	coins = config.start_coins
 	has_respawn_point = false
 	items.clear()
+	for id: String in config.start_items:
+		items[id] = config.start_items[id]
+	equipment.clear()
+	for slot: String in EQUIPMENT_SLOTS:
+		var id: String = config.start_equipment.get(slot, "")
+		equipment[slot] = id
+		if not id.is_empty():
+			items[id] = items.get(id, 0) + 1
+	merchant_stock.clear()
 
 
 func has_save() -> bool:
@@ -415,6 +573,8 @@ func _setup_input() -> void:
 		&"roll": KEY_SPACE,
 		&"lock_on": KEY_Q,
 		&"switch_target": KEY_TAB,
+		&"heal": KEY_H,
+		&"inventory": KEY_I,
 	}
 	for action: StringName in bindings:
 		if not InputMap.has_action(action):

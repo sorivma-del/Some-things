@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MerchantData" format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/merchant_data.gd" id="1_3ioag"]
+
+[resource]
+script = ExtResource("1_3ioag")
+id = "herbwife"
+display_name = "Травница Велена"
+stock_ids = PackedStringArray("wormwood", "elecampane", "burnet", "medicine", "bandage", "bread")
+stock_counts = PackedInt32Array(3, 3, 3, 1, 5, 6)
+buys_types = Array[int]([3, 4, 5])
+buy_factor_low_trust = 1.4
+buy_factor_high_trust = 1.0
+sell_factor_low_trust = 0.35
+sell_factor_high_trust = 0.6

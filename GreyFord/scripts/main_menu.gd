@@ -75,18 +75,4 @@ func _label(text: String, size: int, weight: int, italic: bool, color: Color, sp
 
 
 func _button(text: String, action: Callable) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.flat = true
-	button.focus_mode = Control.FOCUS_ALL
-	button.add_theme_font_override(&"font", UiStyle.font(500))
-	button.add_theme_font_size_override(&"font_size", 32)
-	button.add_theme_color_override(&"font_color", UiStyle.COLOR_TEXT)
-	button.add_theme_color_override(&"font_hover_color", UiStyle.COLOR_ACCENT)
-	button.add_theme_color_override(&"font_focus_color", UiStyle.COLOR_ACCENT)
-	button.add_theme_color_override(&"font_pressed_color", UiStyle.COLOR_ACCENT)
-	button.add_theme_color_override(&"font_disabled_color", Color(0.4, 0.38, 0.35))
-	button.add_theme_color_override(&"font_outline_color", UiStyle.COLOR_OUTLINE)
-	button.add_theme_constant_override(&"outline_size", 6)
-	button.pressed.connect(action)
-	return button
+	return UiStyle.button(text, action)

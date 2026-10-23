@@ -50,9 +50,12 @@ func _ready() -> void:
 	GameState.time_changed.connect(_refresh_status)
 	GameState.inventory_changed.connect(_refresh_status)
 	GameState.notified.connect(_toast)
+	GameState.coins_changed.connect(func(_coins: int) -> void: _refresh_status())
 	_refresh_status()
 	_build_combat()
 	_connect_combat.call_deferred()
+	add_child(InventoryWindow.new())
+	add_child(TradeWindow.new())
 
 
 func _process(_delta: float) -> void:
@@ -83,7 +86,8 @@ func _refresh_status() -> void:
 	for id: String in GameState.config.herb_ids:
 		parts.append("%s %d" % [GameState.herb_name(id), GameState.herbs.get(id, 0)])
 	parts.append("Лекарство %d" % GameState.medicine)
-	_inventory_label.text = "   ·   ".join(parts)
+	parts.append("Монеты %d" % GameState.coins)
+	_inventory_label.text = "   ·   ".join(parts) + "      I — сумка"
 
 
 func _toast(text: String) -> void:

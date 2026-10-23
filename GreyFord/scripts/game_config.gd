@@ -30,3 +30,10 @@ extends Resource
 @export var trust_start: Dictionary[String, int] = {"helga": 55, "tomash": 30, "anka": 60, "yan": 20, "olbrecht": 15}
 ## Trust lost with every villager when Mara is caught.
 @export var trust_lost_when_caught: int = 8
+
+@export_group("Economy")
+@export var start_coins: int = 20
+## Slot -> item id Mara starts with.
+@export var start_equipment: Dictionary[String, String] = {"weapon": "bronze_sword", "shield": "wooden_shield", "armor": ""}
+## Item id -> count in Mara's bag at the start.
+@export var start_items: Dictionary[String, int] = {"bandage": 2}

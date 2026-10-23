@@ -9,3 +9,5 @@
 | Заражённый: своя модель (лохмотья, бледная кожа) | обычный мужчина + зеленоватая плёнка + анимации `Zombie_*` | Quaternius Zombie Apocalypse Kit: https://quaternius.com/packs/zombieapocalypsekit.html | CC0 |
 | Разбойник: отличимый наряд | тот же наряд следопыта, что у дозорных, + борода и меч | Quaternius Modular Character Outfits – Fantasy (полная версия) | CC0 |
 | Волк серый, а не белый | белый волк Quaternius | перекрасить текстуру/материал при желании | CC0 |
+| Отдельные наряды торговцев (фартук кузнеца, платок травницы) | наряды следопыта и крестьянки, как у жителей | Quaternius Modular Character Outfits – Fantasy (полная версия) | CC0 |
+| Звуки монет и торговли | нет | https://kenney.nl/assets/rpg-audio | CC0 |

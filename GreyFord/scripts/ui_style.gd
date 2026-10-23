@@ -42,3 +42,22 @@ static func apply_label(label: Control, size: int, weight: int = 500, italic: bo
 	label.add_theme_constant_override(&"shadow_offset_x", 0)
 	label.add_theme_constant_override(&"shadow_offset_y", 2)
 	label.add_theme_constant_override(&"shadow_outline_size", maxi(6, size / 3))
+
+
+## Flat text button in the game's font: light text, accent on hover and focus.
+static func button(text: String, action: Callable, size: int = 32) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.flat = true
+	button.focus_mode = Control.FOCUS_ALL
+	button.add_theme_font_override(&"font", font(500))
+	button.add_theme_font_size_override(&"font_size", size)
+	button.add_theme_color_override(&"font_color", COLOR_TEXT)
+	button.add_theme_color_override(&"font_hover_color", COLOR_ACCENT)
+	button.add_theme_color_override(&"font_focus_color", COLOR_ACCENT)
+	button.add_theme_color_override(&"font_pressed_color", COLOR_ACCENT)
+	button.add_theme_color_override(&"font_disabled_color", Color(0.4, 0.38, 0.35))
+	button.add_theme_color_override(&"font_outline_color", COLOR_OUTLINE)
+	button.add_theme_constant_override(&"outline_size", 6)
+	button.pressed.connect(action)
+	return button

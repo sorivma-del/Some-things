@@ -22,6 +22,18 @@ trust_start = Dictionary[String, int]({
 "helga": 55,
 "olbrecht": 15,
 "tomash": 30,
-"yan": 20
+"yan": 20,
+"smith": 40,
+"herbwife": 50,
+"peddler": 25
 })
 trust_lost_when_caught = 8
+start_coins = 20
+start_equipment = Dictionary[String, String]({
+"armor": "",
+"shield": "wooden_shield",
+"weapon": "bronze_sword"
+})
+start_items = Dictionary[String, int]({
+"bandage": 2
+})

@@ -1,0 +1,156 @@
+[gd_resource type="Resource" script_class="ItemCatalog" format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/item.gd" id="1_5ni20"]
+[ext_resource type="PackedScene" path="res://resources/models/props/Sword_Bronze.gltf" id="2_rgxmq"]
+[ext_resource type="PackedScene" path="res://resources/models/props/Axe_Bronze.gltf" id="3_d0yis"]
+[ext_resource type="PackedScene" path="res://resources/models/props/Shield_Wooden.gltf" id="4_hf1xa"]
+[ext_resource type="Script" path="res://scripts/economy/item_catalog.gd" id="5_smoxb"]
+
+[sub_resource type="Resource" id="Resource_yln5h"]
+script = ExtResource("1_5ni20")
+id = "bronze_sword"
+display_name = "Бронзовый меч"
+type = 0
+price = 40
+description = "Старый, но наточенный."
+damage = 20.0
+model = ExtResource("2_rgxmq")
+hold_offset = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.07, 0.02)
+
+[sub_resource type="Resource" id="Resource_tbkc5"]
+script = ExtResource("1_5ni20")
+id = "woodsman_axe"
+display_name = "Топор лесоруба"
+type = 0
+price = 75
+description = "Тяжелее меча, бьёт сильнее."
+damage = 26.0
+model = ExtResource("3_d0yis")
+hold_offset = Transform3D(-5.2453668e-08, 0, -1.2, 0, 1.2, 0, 1.2, 0, -5.2453668e-08, 0, 0.07, 0.02)
+
+[sub_resource type="Resource" id="Resource_oyte8"]
+script = ExtResource("1_5ni20")
+id = "steel_sword"
+display_name = "Стальной меч"
+type = 0
+price = 150
+description = "Кузнечная работа, ровный клинок."
+damage = 32.0
+model = ExtResource("2_rgxmq")
+hold_offset = Transform3D(1.08, 0, 0, 0, -4.72083e-08, -1.08, 0, 1.08, -4.72083e-08, 0, 0.07, 0.02)
+
+[sub_resource type="Resource" id="Resource_k2gsh"]
+script = ExtResource("1_5ni20")
+id = "wooden_shield"
+display_name = "Деревянный щит"
+type = 1
+price = 30
+description = "Доски и кожаный ремень."
+model = ExtResource("4_hf1xa")
+hold_offset = Transform3D(-3.715468e-08, -0.85, 3.715468e-08, 0, -3.715468e-08, -0.85, 0.85, -3.715468e-08, 1.6240827e-15, 0, 0, -0.06)
+
+[sub_resource type="Resource" id="Resource_bef74"]
+script = ExtResource("1_5ni20")
+id = "bound_shield"
+display_name = "Окованный щит"
+type = 1
+price = 95
+description = "Железный обод держит удар."
+block_cost_factor = 0.65
+model = ExtResource("4_hf1xa")
+hold_offset = Transform3D(-4.087015e-08, -0.93500006, 4.087015e-08, 0, -4.087015e-08, -0.93500006, 0.93500006, -4.087015e-08, 1.786491e-15, 0, 0, -0.06)
+
+[sub_resource type="Resource" id="Resource_qel3j"]
+script = ExtResource("1_5ni20")
+id = "quilted_coat"
+display_name = "Стёганка"
+type = 2
+price = 55
+description = "Простёганный ватник."
+defense = 0.12
+
+[sub_resource type="Resource" id="Resource_55325"]
+script = ExtResource("1_5ni20")
+id = "leather_armor"
+display_name = "Кожаный доспех"
+type = 2
+price = 110
+description = "Варёная кожа на плечах и груди."
+defense = 0.22
+
+[sub_resource type="Resource" id="Resource_00hon"]
+script = ExtResource("1_5ni20")
+id = "mail_shirt"
+display_name = "Кольчуга"
+type = 2
+price = 240
+description = "Тяжёлая, но надёжная."
+defense = 0.35
+
+[sub_resource type="Resource" id="Resource_rm1lx"]
+script = ExtResource("1_5ni20")
+id = "wormwood"
+display_name = "Полынь"
+type = 3
+price = 4
+description = "Горькая трава, одна из трёх для отвара."
+
+[sub_resource type="Resource" id="Resource_ppbcj"]
+script = ExtResource("1_5ni20")
+id = "elecampane"
+display_name = "Девясил"
+type = 3
+price = 5
+description = "Корень, одна из трёх трав для отвара."
+
+[sub_resource type="Resource" id="Resource_3h58k"]
+script = ExtResource("1_5ni20")
+id = "burnet"
+display_name = "Кровохлёбка"
+type = 3
+price = 6
+description = "Красные головки, одна из трёх трав для отвара."
+
+[sub_resource type="Resource" id="Resource_qxbvu"]
+script = ExtResource("1_5ni20")
+id = "medicine"
+display_name = "Отвар от жара"
+type = 4
+price = 28
+description = "Сбивает жар. Нужен больным."
+
+[sub_resource type="Resource" id="Resource_58ao6"]
+script = ExtResource("1_5ni20")
+id = "bandage"
+display_name = "Бинт"
+type = 5
+price = 8
+description = "Перевязать рану (H)."
+heal = 25.0
+
+[sub_resource type="Resource" id="Resource_u3mhv"]
+script = ExtResource("1_5ni20")
+id = "bread"
+display_name = "Хлеб"
+type = 5
+price = 3
+description = "Чёрствый, но сытный (H)."
+heal = 10.0
+
+[sub_resource type="Resource" id="Resource_vlv3h"]
+script = ExtResource("1_5ni20")
+id = "wolf_pelt"
+display_name = "Волчья шкура"
+price = 18
+description = "Кожевник возьмёт."
+
+[sub_resource type="Resource" id="Resource_u8xxj"]
+script = ExtResource("1_5ni20")
+id = "copper_ring"
+display_name = "Медное кольцо"
+price = 18
+description = "Снято с разбойника."
+
+[resource]
+script = ExtResource("5_smoxb")
+items = Array[ExtResource("1_5ni20")]([SubResource("Resource_yln5h"), SubResource("Resource_tbkc5"), SubResource("Resource_oyte8"), SubResource("Resource_k2gsh"), SubResource("Resource_bef74"), SubResource("Resource_qel3j"), SubResource("Resource_55325"), SubResource("Resource_00hon"), SubResource("Resource_rm1lx"), SubResource("Resource_ppbcj"), SubResource("Resource_3h58k"), SubResource("Resource_qxbvu"), SubResource("Resource_58ao6"), SubResource("Resource_u3mhv"), SubResource("Resource_vlv3h"), SubResource("Resource_u8xxj")])
