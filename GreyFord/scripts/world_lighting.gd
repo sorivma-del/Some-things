@@ -32,6 +32,8 @@ func set_fog_scale(value: float) -> void:
 
 
 func _preset_name() -> String:
+	if GameState.world_mode:
+		return GameState.world_period()
 	if GameState.phase == GameState.Phase.NIGHT:
 		return "night"
 	return ["morning", "day", "evening"][clampi(GameState.slots_used, 0, 2)]

@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/deer.gd" id="1_deer"]
+[ext_resource type="Script" path="res://scripts/animal_model.gd" id="2_model"]
+[ext_resource type="PackedScene" path="res://resources/models/animals/Deer.gltf" id="3_deer"]
+
+[node name="Deer" type="CharacterBody3D"]
+script = ExtResource("1_deer")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("2_model")
+scene = ExtResource("3_deer")
+model_scale = 0.4

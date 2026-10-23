@@ -28,6 +28,7 @@ enum Phase { DAY, NIGHT }
 const HERO_STATS: CharacterStats = preload("res://resources/mara_stats.tres")
 const CONFIG: GameConfig = preload("res://resources/game_config.tres")
 const ITEMS: ItemCatalog = preload("res://resources/items/catalog.tres")
+const WORLD: WorldConfig = preload("res://resources/world/world_config.tres")
 const MERCHANTS: Dictionary[String, MerchantData] = {
 	"smith": preload("res://resources/merchants/smith.tres"),
 	"herbwife": preload("res://resources/merchants/herbwife.tres"),
@@ -63,6 +64,11 @@ var has_respawn_point: bool = false
 var world_mode: bool = false
 ## Open-world places found so far: id -> true.
 var discovered: Dictionary[String, bool] = {}
+## Open-world clock: day number and hour (0..24).
+var world_day: int = 1
+var world_hour: float = 8.0
+## Enemy group -> world day it was wiped out (it returns WorldConfig.respawn_days later).
+var world_cleared: Dictionary[String, int] = {}
 ## Mara's health between scenes and in saves (PlayerCombat keeps it in step); <0 = full.
 var hero_health: float = -1.0
 ## Mara's bag apart from herbs and the remedy (item id -> count). See count()/give()/take().
@@ -437,6 +443,22 @@ func sell(merchant_id: String, id: String) -> bool:
 
 #region Open world
 
+## "morning", "day", "evening" or "night" by the open-world clock.
+func world_period() -> String:
+	if world_hour >= WORLD.night_hour or world_hour < WORLD.morning_hour:
+		return "night"
+	if world_hour >= WORLD.evening_hour:
+		return "evening"
+	if world_hour >= WORLD.day_hour:
+		return "day"
+	return "morning"
+
+
+func world_clock_text() -> String:
+	var minutes := int(world_hour * 60.0) % (24 * 60)
+	return "%02d:%02d" % [minutes / 60, minutes % 60]
+
+
 func discover(id: String, display_name: String) -> void:
 	if discovered.has(id):
 		return
@@ -515,6 +537,9 @@ func new_game() -> void:
 	hero_health = -1.0
 	world_mode = false
 	discovered.clear()
+	world_day = 1
+	world_hour = WORLD.start_hour
+	world_cleared.clear()
 	items.clear()
 	for id: String in config.start_items:
 		items[id] = config.start_items[id]

@@ -59,6 +59,8 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	if GameState.world_mode and Engine.get_process_frames() % 30 == 0:
+		_refresh_status()  # The clock runs.
 	# On horseback the stamina bar shows the horse's breath.
 	var horse := get_tree().get_first_node_in_group(&"horse")
 	if horse and horse.call(&"is_ridden"):
@@ -80,7 +82,11 @@ func set_day_status_visible(value: bool) -> void:
 
 
 func _refresh_status() -> void:
-	if GameState.phase == GameState.Phase.NIGHT:
+	if GameState.world_mode:
+		var period: String = {"morning": "УТРО", "day": "ДЕНЬ", "evening": "ВЕЧЕР", "night": "НОЧЬ"}[GameState.world_period()]
+		_time_label.text = "ДЕНЬ %d  ·  %s  %s" % [GameState.world_day, period, GameState.world_clock_text()]
+		_slots_label.text = ""
+	elif GameState.phase == GameState.Phase.NIGHT:
 		_time_label.text = "НОЧЬ %d" % GameState.day
 		_slots_label.text = ""
 	else:

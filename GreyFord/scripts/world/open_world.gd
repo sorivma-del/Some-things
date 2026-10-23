@@ -42,6 +42,7 @@ func _ready() -> void:
 	add_to_group(&"open_world")
 	_rng.seed = 5150
 	GameState.world_mode = true
+	add_child(WorldClock.new())
 	_build_terrain()
 	_build_gate()
 	_build_bridge()
@@ -50,6 +51,9 @@ func _ready() -> void:
 	_build_places()
 	_build_forests()
 	_place_horse()
+	var encounters := WorldEncounters.new()
+	encounters.name = "Encounters"
+	add_child(encounters)
 	get_tree().call_group(&"world_lighting", &"set_fog_scale", CONFIG.fog_scale)
 	_arrive.call_deferred()
 
