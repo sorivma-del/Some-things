@@ -44,6 +44,7 @@ var _attack_index: int = 0
 var _attack_queued: bool = false
 var _roll_direction: Vector3
 var _knockback: Vector3
+var _move_velocity: Vector3
 var _since_spend: float = 100.0
 var _spawn_point: Vector3
 var _sfx := AudioStreamPlayer3D.new()
@@ -137,14 +138,13 @@ func drive(direction: Vector3, delta: float) -> void:
 		stamina_changed.emit(stamina, data.max_stamina)
 
 	_knockback = _knockback.move_toward(Vector3.ZERO, data.knockback_decay * delta)
-	var horizontal := Vector3(_body.velocity.x, 0.0, _body.velocity.z)
+	# Own movement and knockback are kept apart, so a push is applied once, not every frame.
 	if state == State.NORMAL:
-		horizontal = horizontal.move_toward(goal, ACCELERATION * delta)
+		_move_velocity = _move_velocity.move_toward(goal, ACCELERATION * delta)
 	else:
-		horizontal = goal
-	horizontal += _knockback
-	_body.velocity.x = horizontal.x
-	_body.velocity.z = horizontal.z
+		_move_velocity = goal
+	_body.velocity.x = _move_velocity.x + _knockback.x
+	_body.velocity.z = _move_velocity.z + _knockback.z
 
 
 func plays_footsteps() -> bool:
