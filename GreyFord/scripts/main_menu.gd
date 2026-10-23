@@ -3,6 +3,7 @@ extends Control
 
 const GAME_SCENE := "res://scenes/main.tscn"
 const ARENA_SCENE := "res://scenes/test/combat_arena.tscn"
+const WORLD_SCENE := "res://scenes/world/open_world.tscn"
 const BACKGROUND: Texture2D = preload("res://resources/ui/menu_background.jpg")
 
 var _continue: Button
@@ -41,6 +42,7 @@ func _ready() -> void:
 	_continue = _button("Продолжить", _on_continue)
 	_continue.disabled = not GameState.has_save()
 	column.add_child(_continue)
+	column.add_child(_button("Земли за Бродом", _on_world))
 	column.add_child(_button("Арена (бой)", _on_arena))
 	column.add_child(_button("Выход", func() -> void: get_tree().quit()))
 	Transition.fade_in(0.8)
@@ -50,6 +52,14 @@ func _on_play() -> void:
 	GameState.new_game()
 	await Transition.fade_out(0.8)
 	get_tree().change_scene_to_file(GAME_SCENE)
+
+
+## Chapter two straight away: a new game started outside the gate.
+func _on_world() -> void:
+	GameState.new_game()
+	GameState.play_intro = false
+	await Transition.fade_out(0.8)
+	get_tree().change_scene_to_file(WORLD_SCENE)
 
 
 func _on_arena() -> void:

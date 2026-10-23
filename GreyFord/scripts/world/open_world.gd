@@ -47,6 +47,7 @@ func _ready() -> void:
 	_build_places()
 	_build_forests()
 	get_tree().call_group(&"world_lighting", &"set_fog_scale", CONFIG.fog_scale)
+	_arrive.call_deferred()
 
 
 func _process(delta: float) -> void:
@@ -62,6 +63,19 @@ func _process(delta: float) -> void:
 		var place: Dictionary = PLACES[id]
 		if not GameState.discovered.has(id) and p.distance_to(place["pos"]) < float(place["radius"]):
 			GameState.discover(id, place["name"])
+
+
+## Mara steps out of the gate (or wakes where the save left her) and the title shows.
+func _arrive() -> void:
+	GameState.lock_controls()
+	Transition.black()
+	var player := get_tree().get_first_node_in_group(&"player") as Node3D
+	player.call(&"teleport", ground(START.x, START.z), Vector3(0, 0, 1))
+	get_tree().call_group(&"camera_rig", &"snap_behind_target")
+	if GameState.discovered.is_empty():
+		await Transition.card(PackedStringArray(["Глава вторая", "Земли за Бродом", "Ворота закрылись за спиной. Отшельник живёт за рекой."]), 2.0)
+	await Transition.fade_in(1.2)
+	GameState.unlock_controls()
 
 
 ## A point on the ground at (x, z).

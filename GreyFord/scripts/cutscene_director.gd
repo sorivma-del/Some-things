@@ -96,6 +96,9 @@ func _on_flag_changed(flag: StringName, value: bool) -> void:
 		_play_finale()
 
 
+const WORLD_SCENE := "res://scenes/world/open_world.tscn"
+
+
 func _play_finale() -> void:
 	_end_intro()
 	GameState.lock_controls()
@@ -119,6 +122,12 @@ func _play_finale() -> void:
 	fade.tween_property(_fade, ^"modulate:a", 1.0, 2.5)
 	fade.tween_interval(0.6)
 	fade.tween_property(_title, ^"modulate:a", 1.0, 2.0)
+	await fade.finished
+	# Chapter two: Mara walks out into the land beyond the gate.
+	await get_tree().create_timer(3.5).timeout
+	Transition.black()
+	GameState.reset_controls()
+	get_tree().change_scene_to_file(WORLD_SCENE)
 
 
 ## Waits for `signal_name` on `source`, or `timeout` seconds, whichever comes first.
