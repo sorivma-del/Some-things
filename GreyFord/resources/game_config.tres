@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="GameConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/game_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+days = 3
+slots_per_day = 3
+slot_names = PackedStringArray("Утро", "День", "Вечер")
+herb_ids = PackedStringArray("wormwood", "elecampane", "burnet")
+herb_names = PackedStringArray("Полынь", "Девясил", "Кровохлёбка")
+sick_start_health = Dictionary[String, int]({
+"anka": 2,
+"yan": 2
+})
+max_health = 3
+forest_guards_per_day = PackedInt32Array(1, 2, 3)
+night_hunters_per_night = PackedInt32Array(0, 2)
+herbs_lost_when_caught = -1

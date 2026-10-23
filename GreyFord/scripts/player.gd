@@ -4,6 +4,8 @@ extends CharacterBody3D
 
 ## Emitted when a walk_to() target is reached.
 signal arrived
+## Hidden state changed (inside a house).
+signal hidden_changed(hidden: bool)
 
 @export var walk_speed: float = 2.6
 @export var acceleration: float = 14.0
@@ -12,6 +14,21 @@ signal arrived
 @export var walk_animation: StringName = &"Walk"
 @export var step_interval: float = 0.42
 
+## 0 = in the open, 1 = fully covered. Highest cover among overlapping HideZones.
+var concealment: float:
+	get:
+		var best := 0.0
+		for zone: HideZone in _cover:
+			best = maxf(best, zone.concealment)
+		return best
+## Inside a house: watchmen cannot see her at all.
+var hidden: bool = false:
+	set(value):
+		hidden = value
+		_model.visible = not value
+		hidden_changed.emit(value)
+
+var _cover: Array[HideZone] = []
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _walk_target: Vector3
 var _walking_to: bool = false
@@ -63,6 +80,24 @@ func _physics_process(delta: float) -> void:
 	if direction.length_squared() > 0.001:
 		var target_yaw := atan2(-direction.x, -direction.z)
 		_model.rotation.y = lerp_angle(_model.rotation.y, target_yaw, clampf(turn_speed * delta, 0.0, 1.0))
+
+
+func enter_cover(zone: HideZone) -> void:
+	if not _cover.has(zone):
+		_cover.append(zone)
+
+
+func leave_cover(zone: HideZone) -> void:
+	_cover.erase(zone)
+
+
+## Moves Mara instantly (scene changes between village, forest and bed).
+func teleport(point: Vector3, facing: Vector3 = Vector3.ZERO) -> void:
+	global_position = point
+	velocity = Vector3.ZERO
+	_walking_to = false
+	if facing != Vector3.ZERO:
+		face_point(point + facing)
 
 
 ## Walk to a point on the ground regardless of player input (for cutscenes).

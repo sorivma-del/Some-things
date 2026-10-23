@@ -17,11 +17,12 @@ const CLEAR_SPOTS: Array[Vector3] = [Vector3(2.2, 20.2, 2.5), Vector3(-2.45, -0.
 const DRY_GRASS := Color(0.5, 0.48, 0.34)
 const GRASS_SHADER: Shader = preload("res://resources/grass_wind.gdshader")
 
-# Position (x, z), modules deep, lit windows. Dark houses are plague houses.
+# Position (x, z), modules deep, lit windows. Dark houses are plague houses; "patient"
+# names who lies inside (see GameState.sick_health).
 const HOUSES: Array[Dictionary] = [
 	{"pos": Vector2(-12.0, -6.0), "depth": 3, "lit": true},
-	{"pos": Vector2(12.5, -5.0), "depth": 4, "lit": false},
-	{"pos": Vector2(-13.0, 8.5), "depth": 3, "lit": false},
+	{"pos": Vector2(12.5, -5.0), "depth": 4, "lit": false, "patient": "yan"},
+	{"pos": Vector2(-13.0, 8.5), "depth": 3, "lit": false, "patient": "anka"},
 	{"pos": Vector2(13.0, 9.0), "depth": 4, "lit": true},
 	{"pos": Vector2(-10.5, -17.5), "depth": 3, "lit": true},
 ]
@@ -34,7 +35,7 @@ func _ready() -> void:
 	_rng.seed = SEED
 	_build_terrain()
 	for house: Dictionary in HOUSES:
-		_build_house(house["pos"], house["depth"], house["lit"])
+		_build_house(house["pos"], house["depth"], house["lit"], house.get("patient", ""))
 	_build_church()
 	_build_props()
 	_build_palisade()
@@ -59,7 +60,7 @@ func _build_terrain() -> void:
 	_terrain.build()
 
 
-func _build_house(pos: Vector2, depth: int, lit: bool) -> void:
+func _build_house(pos: Vector2, depth: int, lit: bool, patient: String) -> void:
 	var house := KitBuilder.house(self, depth, lit)
 	house.position = Vector3(pos.x, 0.0, pos.y)
 	# Front door faces the campfire in the village centre.
@@ -73,8 +74,13 @@ func _build_house(pos: Vector2, depth: int, lit: bool) -> void:
 		glow.omni_range = 5.5
 		glow.position = Vector3(0.0, 1.8, front + 1.2)
 		house.add_child(glow)
-	else:
+	elif patient.is_empty():
 		_add_inspectable(house, Vector3(0.0, 1.0, front + 0.5), "Осмотреть дверь", "plague_house")
+	else:
+		var door := SickHouse.new()
+		door.patient = patient
+		door.position = Vector3(0.0, 1.0, front + 0.5)
+		house.add_child(door)
 
 
 func _build_church() -> void:
@@ -131,8 +137,8 @@ func _build_forest() -> void:
 	while placed < 170 and attempts < 5000:
 		attempts += 1
 		var p := Vector2(_rng.randf_range(-60.0, 60.0), _rng.randf_range(-62.0, 62.0))
-		if CLEARING.has_point(p):
-			continue
+		if CLEARING.has_point(p) or ForestZone.AREA.grow(1.0).has_point(p):
+			continue  # The forest zone plants its own trees around the patrol routes.
 		if absf(p.x) < 4.5 and p.y > PALISADE_Z - 2.0:
 			continue  # Road out of the gate.
 		if absf(p.y - PALISADE_Z) < 2.0 and absf(p.x) < BOUNDS.end.x + 1.0:

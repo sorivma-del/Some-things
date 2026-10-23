@@ -1,0 +1,16 @@
+[remap]
+
+importer="dialogue_manager"
+importer_version=18
+type="Resource"
+uid="uid://d2hpivju2e5s3"
+path="res://.godot/imported/sick.dialogue-89194e6bb48ef82d035c88c379bf2250.tres"
+
+[deps]
+
+source_file="res://dialogues/sick.dialogue"
+dest_files=["res://.godot/imported/sick.dialogue-89194e6bb48ef82d035c88c379bf2250.tres"]
+
+[params]
+
+defaults=true

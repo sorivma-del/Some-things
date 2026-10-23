@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Серый Брод"
 config/description="Вертикальный срез: чумная деревня, сумерки."
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 
 [autoload]
@@ -20,6 +20,7 @@ config/features=PackedStringArray("4.6", "Forward Plus")
 DialogueManager="*res://addons/dialogue_manager/dialogue_manager.gd"
 GameState="*res://scripts/autoload/game_state.gd"
 DialogueRunner="*res://scripts/autoload/dialogue_runner.gd"
+Transition="*res://scripts/autoload/transition.gd"
 
 [debug]
 
@@ -37,7 +38,7 @@ enabled=PackedStringArray("res://addons/dialogue_manager/plugin.cfg")
 
 [internationalization]
 
-locale/translations_pot_files=PackedStringArray("res://dialogues/inspect.dialogue", "res://dialogues/helga.dialogue", "res://dialogues/tomash.dialogue")
+locale/translations_pot_files=PackedStringArray("res://dialogues/inspect.dialogue", "res://dialogues/helga.dialogue", "res://dialogues/tomash.dialogue", "res://dialogues/sick.dialogue")
 
 [layer_names]
 
@@ -47,5 +48,4 @@ locale/translations_pot_files=PackedStringArray("res://dialogues/inspect.dialogu
 [rendering]
 
 textures/vram_compression/import_etc2_astc=true
-
 anti_aliasing/quality/msaa_3d=2

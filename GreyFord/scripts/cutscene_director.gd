@@ -7,9 +7,9 @@ extends Node
 ## Pass "--skip-intro" after "--" on the command line to start straight in gameplay.
 
 const INTRO_LINES: PackedStringArray = [
-	"Серый Брод. Третий день мора.",
+	"Серый Брод. Староста запер ворота: через три дня приедут люди барона.",
 	"Утром Мара нашла у себя на запястье тёмное пятно.",
-	"Отшельник за рекой — день пути. На закате ворота заложат до утра.",
+	"В домах с крестами ещё живы двое. Травы растут в лесу за церковью.",
 ]
 const INTRO_START := Transform3D(Basis(), Vector3(3.0, 7.5, -11.5))
 const INTRO_LOOK_AT := Vector3(0.0, 1.0, 1.5)
@@ -36,7 +36,8 @@ func _ready() -> void:
 	add_child(_camera)
 	_build_overlay()
 	GameState.flag_changed.connect(_on_flag_changed)
-	if OS.get_cmdline_user_args().has("--skip-intro"):
+	if OS.get_cmdline_user_args().has("--skip-intro") or not GameState.play_intro:
+		GameState.play_intro = false
 		_fade.modulate.a = 0.0
 	else:
 		_play_intro.call_deferred()
@@ -72,6 +73,7 @@ func _end_intro() -> void:
 	if not _intro_running:
 		return
 	_intro_running = false
+	GameState.play_intro = false
 	if _intro_tween:
 		_intro_tween.kill()
 	_fade.modulate.a = 0.0

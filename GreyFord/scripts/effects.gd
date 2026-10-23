@@ -57,6 +57,20 @@ static func torch_flame(parent: Node3D, pos: Vector3) -> GPUParticles3D:
 	return p
 
 
+## A few slow motes over a herb so it can be found in the dark forest.
+static func glints(parent: Node3D, pos: Vector3, color: Color) -> CPUParticles3D:
+	var p := _particles(parent, pos, 6, 2.5, 0.07, BaseMaterial3D.BLEND_MODE_ADD)
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = 0.35
+	p.direction = Vector3.UP
+	p.spread = 60.0
+	p.gravity = Vector3(0.0, 0.08, 0.0)
+	p.initial_velocity_min = 0.05
+	p.initial_velocity_max = 0.15
+	p.color_ramp = _gradient([[0.0, Color(color, 0.0)], [0.4, Color(color, 0.9)], [1.0, Color(color, 0.0)]])
+	return p
+
+
 ## Sparks that drift up and wink out.
 static func sparks(parent: Node3D, pos: Vector3) -> CPUParticles3D:
 	var p := _particles(parent, pos, 22, 2.6, 0.05, BaseMaterial3D.BLEND_MODE_ADD)

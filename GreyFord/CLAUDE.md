@@ -73,6 +73,17 @@ GreyFord/
 - `CharacterModel` — модульный персонаж Quaternius; `UiStyle` — шрифт и обводка текста
   (Cormorant Garamond, OFL, `resources/fonts/`).
 
+## Три дня (шаги 2–4 второй части)
+
+- `GameState`: день, слоты (`spend_slot`, `slots_left`), фаза DAY/NIGHT, травы, лекарство,
+  здоровье больных (`sick_health`), поимки, флаги (`has_flag/set_flag`), сохранение
+  JSON в начале каждого дня (`user://greyford_save.json`). Числа — `resources/game_config.tres`.
+- Действия за слот: лес (`ForestZone`, лаз за церковью), котёл (`cauldron.gd`), визит к
+  больному (`SickHouse` + `dialogues/sick.dialogue`). Ходьба по деревне бесплатна.
+- `DayDirector`: конец дня → ночь → утро; день 3 → финал. `WorldLighting` — свет по времени.
+- `Guard` — стелс-ИИ (конус зрения + луч, Patrol/Suspicious/Chase/Search), `HideZone` — укрытия.
+- `Transition` (автолоад) — затемнения и титры. `main_menu.tscn` — стартовая сцена.
+
 ## Правила
 
 - Только Godot 4 API. Никаких `yield`, `onready var` без `@`, `KinematicBody` и т.п.

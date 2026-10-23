@@ -26,6 +26,7 @@ var _saved_pitch: float
 
 
 func _ready() -> void:
+	add_to_group(&"camera_rig")
 	_arm.spring_length = distance
 	if target is CollisionObject3D:
 		_arm.add_excluded_object((target as CollisionObject3D).get_rid())
@@ -60,6 +61,17 @@ func snap_to_target() -> void:
 	if target:
 		global_position = target.global_position + Vector3.UP * height
 	rotation_degrees = Vector3(pitch_degrees, yaw_degrees, 0.0)
+
+
+## Jumps behind Mara after a teleport (forest, bed) instead of gliding across the map.
+func snap_behind_target() -> void:
+	if target == null:
+		return
+	var model := target.get_node_or_null(^"Model") as Node3D
+	if model:
+		yaw_degrees = rad_to_deg(model.global_rotation.y)
+	snap_to_target()
+	_arm.spring_length = distance
 
 
 func make_current() -> void:

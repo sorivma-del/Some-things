@@ -30,6 +30,7 @@ func _init() -> void:
 
 ## Call after flat_spots and paths are filled.
 func build() -> void:
+	add_to_group(&"terrain")
 	var n := size + 1
 	var half := size * 0.5
 	var heights := PackedFloat32Array()
