@@ -614,6 +614,8 @@ func _setup_input() -> void:
 		&"switch_target": KEY_TAB,
 		&"heal": KEY_H,
 		&"inventory": KEY_I,
+		&"sprint": KEY_SHIFT,
+		&"call_horse": KEY_X,
 	}
 	for action: StringName in bindings:
 		if not InputMap.has_action(action):

@@ -10,6 +10,9 @@ const NATURE := "res://resources/models/nature/"
 const CAMPFIRE: PackedScene = preload("res://scenes/campfire.tscn")
 const PEDDLER: PackedScene = preload("res://scenes/merchants/peddler.tscn")
 const HERMIT: PackedScene = preload("res://scenes/world/hermit.tscn")
+const HORSE: PackedScene = preload("res://scenes/world/horse.tscn")
+## Where the horse waits, tied at the crossroads, until Mara first rides it.
+const HORSE_START := Vector2(6.0, 86.0)
 const CHUNK := 75.0
 const START := Vector3(0.0, 0.0, 9.0)
 
@@ -46,6 +49,7 @@ func _ready() -> void:
 	_build_bounds()
 	_build_places()
 	_build_forests()
+	_place_horse()
 	get_tree().call_group(&"world_lighting", &"set_fog_scale", CONFIG.fog_scale)
 	_arrive.call_deferred()
 
@@ -315,6 +319,13 @@ func _build_hermit() -> void:
 	add_child(hermit)
 
 #endregion
+
+
+func _place_horse() -> void:
+	var horse := HORSE.instantiate() as Node3D
+	horse.position = ground(HORSE_START.x, HORSE_START.y) + Vector3.UP * 0.3
+	horse.rotation.y = PI * 0.5
+	add_child(horse)
 
 
 #region Forests

@@ -31,6 +31,8 @@ var hidden: bool = false:
 
 ## Standing still behind a door (HideHouse): input does not move her.
 var frozen: bool = false
+## The horse she rides, or null on foot. While riding the horse moves; she sits on it.
+var mount: Node3D = null
 
 var _cover: Array[HideZone] = []
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -52,6 +54,12 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if mount:
+		var seat: Vector3 = (mount.get(&"data") as Resource).get(&"seat")
+		global_position = mount.global_transform * seat
+		velocity = Vector3.ZERO
+		_model.global_rotation.y = mount.global_rotation.y
+		return
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
 
@@ -104,6 +112,25 @@ func enter_cover(zone: HideZone) -> void:
 
 func leave_cover(zone: HideZone) -> void:
 	_cover.erase(zone)
+
+
+## Climbs onto a horse: no own collision or interaction prompts while riding.
+func mount_on(horse: Node3D) -> void:
+	mount = horse
+	($CollisionShape3D as CollisionShape3D).disabled = true
+	var detector := get_node_or_null(^"InteractionDetector")
+	if detector:
+		detector.process_mode = Node.PROCESS_MODE_DISABLED
+	_model.play(&"Driving")
+
+
+func dismount_at(point: Vector3, facing: Vector3) -> void:
+	mount = null
+	($CollisionShape3D as CollisionShape3D).disabled = false
+	var detector := get_node_or_null(^"InteractionDetector")
+	if detector:
+		detector.process_mode = Node.PROCESS_MODE_INHERIT
+	teleport(point + Vector3.UP * 0.3, facing)
 
 
 ## Moves Mara instantly (scene changes between village, forest and bed).

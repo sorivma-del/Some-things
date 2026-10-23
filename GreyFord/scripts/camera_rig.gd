@@ -23,6 +23,8 @@ extends Node3D
 @export var lock_pitch_degrees: float = -16.0
 
 var _speaker: Node3D
+var _default_distance: float
+var _default_height: float
 var _saved_yaw: float
 var _saved_pitch: float
 var _lock_target: Node3D
@@ -36,6 +38,8 @@ var _shake_length_ms: int = 1
 
 func _ready() -> void:
 	add_to_group(&"camera_rig")
+	_default_distance = distance
+	_default_height = height
 	_arm.spring_length = distance
 	if target is CollisionObject3D:
 		_arm.add_excluded_object((target as CollisionObject3D).get_rid())
@@ -72,6 +76,12 @@ func _process(delta: float) -> void:
 	rotation.y = lerp_angle(rotation.y, deg_to_rad(yaw_degrees), weight)
 	_arm.spring_length = lerpf(_arm.spring_length, length, weight)
 	_update_shake()
+
+
+## Further back and higher, e.g. on horseback; negative values restore the defaults.
+func set_follow_view(new_distance: float, new_height: float) -> void:
+	distance = new_distance if new_distance > 0.0 else _default_distance
+	height = new_height if new_height > 0.0 else _default_height
 
 
 ## Keeps `node` in view (null releases the lock).

@@ -59,6 +59,10 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	# On horseback the stamina bar shows the horse's breath.
+	var horse := get_tree().get_first_node_in_group(&"horse")
+	if horse and horse.call(&"is_ridden"):
+		_stamina_bar.value = float(horse.get(&"stamina")) / float((horse.get(&"data") as Resource).get(&"max_stamina")) * 100.0
 	if is_instance_valid(_target):
 		_target_bar.value = float(_target.call(&"health_ratio")) * 100.0
 
