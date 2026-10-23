@@ -73,7 +73,7 @@ func _on_continue() -> void:
 		_continue.disabled = true
 		return
 	await Transition.fade_out(0.8)
-	get_tree().change_scene_to_file(GAME_SCENE)
+	get_tree().change_scene_to_file(GameState.saved_scene_path())
 
 
 func _label(text: String, size: int, weight: int, italic: bool, color: Color, spacing: int) -> Label:

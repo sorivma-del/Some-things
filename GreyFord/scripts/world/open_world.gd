@@ -41,6 +41,7 @@ var _discover_timer: float = 0.0
 
 func _ready() -> void:
 	add_to_group(&"open_world")
+	add_to_group(&"save_hooks")
 	_rng.seed = 5150
 	GameState.world_mode = true
 	add_child(WorldClock.new())
@@ -79,12 +80,31 @@ func _arrive() -> void:
 	GameState.lock_controls()
 	Transition.black()
 	var player := get_tree().get_first_node_in_group(&"player") as Node3D
-	player.call(&"teleport", ground(START.x, START.z), Vector3(0, 0, 1))
+	var first_time := not GameState.has_world_position
+	var spot := GameState.world_position if not first_time else ground(START.x, START.z)
+	player.call(&"teleport", spot + Vector3.UP * 0.2, Vector3(0, 0, 1))
 	get_tree().call_group(&"camera_rig", &"snap_behind_target")
-	if GameState.discovered.is_empty():
+	if first_time:
 		await Transition.card(PackedStringArray(["Глава вторая", "Земли за Бродом", "Ворота закрылись за спиной. Отшельник живёт за рекой."]), 2.0)
+	else:
+		await Transition.card(PackedStringArray(["День %d" % GameState.world_day, "Земли за Бродом"]), 1.0)
 	await Transition.fade_in(1.2)
 	GameState.unlock_controls()
+	if first_time:
+		GameState.save_game()
+
+
+## Called by GameState.save_game(): where Mara and the horse are.
+func before_save() -> void:
+	var player := get_tree().get_first_node_in_group(&"player") as Node3D
+	if player:
+		var anchor: Node3D = player.get(&"mount") if player.get(&"mount") else player
+		GameState.world_position = anchor.global_position
+		GameState.has_world_position = true
+	var horse := get_tree().get_first_node_in_group(Horse.GROUP) as Node3D
+	if horse:
+		GameState.horse_position = horse.global_position
+		GameState.has_horse_position = true
 
 
 ## A point on the ground at (x, z).
@@ -394,7 +414,7 @@ func _build_hermit() -> void:
 
 func _place_horse() -> void:
 	var horse := HORSE.instantiate() as Node3D
-	horse.position = ground(HORSE_START.x, HORSE_START.y) + Vector3.UP * 0.3
+	horse.position = GameState.horse_position if GameState.has_horse_position else ground(HORSE_START.x, HORSE_START.y) + Vector3.UP * 0.3
 	horse.rotation.y = PI * 0.5
 	add_child(horse)
 

@@ -13,6 +13,7 @@ var _info: RichTextLabel
 var _invulnerable: Button
 var _timer: float = 0.0
 var _merchant_index: int = 0
+var _place_index: int = -1
 
 
 func _ready() -> void:
@@ -70,6 +71,8 @@ func _build() -> void:
 	grid.add_child(_button("Разбойник рядом", _spawn.bind(BANDIT)))
 	grid.add_child(_button("К торговцу", _to_merchant))
 	grid.add_child(_button("Пропустить день", _skip_time))
+	grid.add_child(_button("Мир: к месту", _to_next_place))
+	grid.add_child(_button("Мир: все места", _discover_all))
 
 	_info = RichTextLabel.new()
 	_info.bbcode_enabled = true
@@ -100,7 +103,12 @@ func _refresh() -> void:
 		return
 	var lines: PackedStringArray = []
 	var phase := "ночь" if GameState.phase == GameState.Phase.NIGHT else "день"
-	lines.append("[b]День %d, %s[/b], действий осталось %d%s" % [GameState.day, phase, GameState.slots_left, "  ·  в лесу" if GameState.in_forest else ""])
+	if GameState.world_mode:
+		var horse := get_tree().get_first_node_in_group(&"horse")
+		lines.append("[b]Мир: день %d, %s (%s)[/b], мест %d/%d%s" % [GameState.world_day, GameState.world_clock_text(), GameState.world_period(),
+				GameState.discovered.size(), OpenWorld.PLACES.size(), "  ·  верхом" if horse and horse.call(&"is_ridden") else ""])
+	else:
+		lines.append("[b]День %d, %s[/b], действий осталось %d%s" % [GameState.day, phase, GameState.slots_left, "  ·  в лесу" if GameState.in_forest else ""])
 	var combat := _combat()
 	var health := "здоровье %d, выносливость %d" % [roundi(combat.health), roundi(combat.stamina)] if combat else "без боя"
 	lines.append("Монеты %d  ·  %s" % [GameState.coins, health])
@@ -180,8 +188,36 @@ func _to_merchant() -> void:
 
 
 ## Day: ends it (the night starts). Night: Mara sleeps (the next morning starts).
+## In the open world: the clock jumps to the next morning.
 func _skip_time() -> void:
+	if GameState.world_mode:
+		var hours := fposmod(GameState.WORLD.wake_hour - GameState.world_hour, 24.0)
+		get_tree().call_group(&"world_clock", &"advance", hours if hours > 0.5 else 24.0)
+		return
 	if get_tree().get_first_node_in_group(&"day_director") == null:
 		GameState.notified.emit("Здесь нет смены дней")
 		return
 	get_tree().call_group(&"day_director", &"debug_skip")
+
+
+## Open world: Mara jumps to the next place in the list.
+func _to_next_place() -> void:
+	var world := get_tree().get_first_node_in_group(&"open_world") as OpenWorld
+	if world == null:
+		GameState.notified.emit("Это не открытый мир")
+		return
+	var ids := OpenWorld.PLACES.keys()
+	_place_index = (_place_index + 1) % ids.size()
+	var spot := world.place_position(ids[_place_index]) + Vector3(4.0, 0.5, 4.0)
+	var player := get_tree().get_first_node_in_group(&"player") as Node3D
+	var horse := get_tree().get_first_node_in_group(Horse.GROUP) as Horse
+	if horse and horse.is_ridden():
+		horse.dismount()
+	player.call(&"teleport", spot)
+	get_tree().call_group(&"camera_rig", &"snap_behind_target")
+	GameState.notified.emit(OpenWorld.PLACES[ids[_place_index]]["name"])
+
+
+func _discover_all() -> void:
+	for id: String in OpenWorld.PLACES:
+		GameState.discover(id, OpenWorld.PLACES[id]["name"])

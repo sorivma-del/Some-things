@@ -136,7 +136,35 @@ func _initialize() -> void:
 	_check("map closed, controls free", not map.get(&"is_open") and not gs.get("controls_locked"))
 	_check("compass on screen", world.find_children("*", "Control", true, false).any(func(c: Node) -> bool: return c.get_script() and str((c.get_script() as Script).get_global_name()) == "Compass"))
 
-	print("open world test: %d failure(s)" % failures)
+	# --- Save in the world, load: back in the world where she stood, horse and clock too.
+	var save_spot := world.call(&"place_position", "rest") as Vector3 + Vector3(6, 0.3, 0)
+	player.call(&"teleport", save_spot)
+	horse.global_position = save_spot + Vector3(3, 0.5, 0)
+	await _wait(0.3)
+	var saved_day: int = gs.get("world_day")
+	var saved_hour: float = gs.get("world_hour")
+	var saved_found := (gs.get("discovered") as Dictionary).size()
+	gs.call(&"save_game")
+	gs.call(&"new_game")
+	_check("load", gs.call(&"load_game"))
+	_check("save remembers the world", gs.get("world_mode") and gs.call(&"saved_scene_path") == "res://scenes/world/open_world.tscn")
+	_check("clock saved", int(gs.get("world_day")) == saved_day and absf(float(gs.get("world_hour")) - saved_hour) < 0.05)
+	_check("found places saved", (gs.get("discovered") as Dictionary).size() == saved_found)
+	_check("horse ownership saved", gs.call(&"has_flag", "horse_owned"))
+	world.queue_free()
+	await process_frame
+	world = (load("res://scenes/world/open_world.tscn") as PackedScene).instantiate() as Node3D
+	root.add_child(world)
+	player = world.get_node("Player") as CharacterBody3D
+	await _wait(0.6)
+	await _wait_unlocked()
+	_check("loaded where she stood", player.global_position.distance_to(save_spot) < 2.0, "%.1f m off" % player.global_position.distance_to(save_spot))
+	var loaded_horse := get_first_node_in_group(&"horse") as Node3D
+	_check("horse where it was left", loaded_horse.global_position.distance_to(save_spot + Vector3(3, 0, 0)) < 2.5)
+	var tower_back: Array = (_groups().get("tower", []) as Array).filter(func(e: Node) -> bool: return is_instance_valid(e))
+	_check("enemy groups restored", tower_back.size() == 2 and _groups().has("camp_chief"))
+
+	print("open_world test: %d failure(s)" % failures)
 	world.queue_free()
 	await process_frame
 	quit(1 if failures > 0 else 0)

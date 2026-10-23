@@ -137,6 +137,19 @@ GreyFord/
 - Автолоад `DebugMenu` (`scripts/autoload/debug_menu.gd`), F3 ловится в `_input` (работает
   и во время диалогов). Пропуск дня — `DayDirector.debug_skip()` (группа `day_director`).
 
+## Открытый мир (глава вторая)
+
+- Сцена `scenes/world/open_world.tscn` (`OpenWorld`): `WorldTerrain` (сетка 2 м: меш,
+  коллайдер той же сетки, `height_at`, `make_map_image`), места `OpenWorld.PLACES`,
+  костры (отдых, возрождение, быстрые перемещения), леса кусками с `visibility_range_end`.
+- `WorldClock` (группа `world_clock`): `GameState.world_day/world_hour`, `world_period()`,
+  отдых `rest(id)`. `WorldLighting` в мире берёт период из часов, туман × `fog_scale`.
+- `Horse` (`scenes/world/horse.tscn`, `HorseData`): `Player.mount_on/dismount_at`, камера
+  `set_follow_view`. `WorldEncounters` — группы врагов по местам, возврат через `respawn_days`.
+- UI: `Compass`, `MapWindow` (M) — добавляются HUD только в мире. Числа: `resources/world/*.tres`.
+- Сохранение v3: `scene`, позиции Мары и лошади (группа `save_hooks` → `before_save()`).
+- Тесты: `tools/tests/horse_test.gd`, `open_world_test.gd`.
+
 ## Правила
 
 - Только Godot 4 API. Никаких `yield`, `onready var` без `@`, `KinematicBody` и т.п.

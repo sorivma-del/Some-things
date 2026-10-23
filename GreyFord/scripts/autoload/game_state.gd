@@ -36,7 +36,7 @@ const MERCHANTS: Dictionary[String, MerchantData] = {
 }
 const EQUIPMENT_SLOTS: PackedStringArray = ["weapon", "shield", "armor"]
 const SAVE_PATH := "user://greyford_save.json"
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 
 var stats: CharacterStats = HERO_STATS
 var config: GameConfig = CONFIG
@@ -64,6 +64,11 @@ var has_respawn_point: bool = false
 var world_mode: bool = false
 ## Open-world places found so far: id -> true.
 var discovered: Dictionary[String, bool] = {}
+## Where Mara and her horse were in the open world when it was saved.
+var world_position: Vector3 = Vector3.ZERO
+var has_world_position: bool = false
+var horse_position: Vector3 = Vector3.ZERO
+var has_horse_position: bool = false
 ## Open-world clock: day number and hour (0..24).
 var world_day: int = 1
 var world_hour: float = 8.0
@@ -540,6 +545,8 @@ func new_game() -> void:
 	world_day = 1
 	world_hour = WORLD.start_hour
 	world_cleared.clear()
+	has_world_position = false
+	has_horse_position = false
 	items.clear()
 	for id: String in config.start_items:
 		items[id] = config.start_items[id]
@@ -556,7 +563,15 @@ func has_save() -> bool:
 	return FileAccess.file_exists(SAVE_PATH)
 
 
+## The scene a loaded save resumes in.
+func saved_scene_path() -> String:
+	return "res://scenes/world/open_world.tscn" if world_mode else "res://scenes/main.tscn"
+
+
 func save_game() -> void:
+	# Scene nodes (the open world, the horse) write their state into GameState first.
+	if is_inside_tree():
+		get_tree().call_group(&"save_hooks", &"before_save")
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
 		push_warning("Cannot write save: %s" % error_string(FileAccess.get_open_error()))
@@ -568,8 +583,9 @@ func load_game() -> bool:
 	if not has_save():
 		return false
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(SAVE_PATH))
-	if not data is Dictionary or (data as Dictionary).get("version", 0) != SAVE_VERSION:
-		push_warning("Save file is missing or from another version")
+	var version := int((data as Dictionary).get("version", 0)) if data is Dictionary else 0
+	if version < 1 or version > SAVE_VERSION:
+		push_warning("Save file is missing or from an unknown version")
 		return false
 	from_dict(data)
 	return true
@@ -591,6 +607,13 @@ func to_dict() -> Dictionary:
 		"items": items,
 		"equipment": equipment,
 		"hero_health": hero_health,
+		"scene": "world" if world_mode else "village",
+		"world_day": world_day,
+		"world_hour": world_hour,
+		"discovered": discovered.keys(),
+		"world_cleared": world_cleared,
+		"world_position": [world_position.x, world_position.y, world_position.z] if has_world_position else [],
+		"horse_position": [horse_position.x, horse_position.y, horse_position.z] if has_horse_position else [],
 	}
 
 
@@ -619,6 +642,22 @@ func from_dict(data: Dictionary) -> void:
 		for slot: String in (data.get("equipment", {}) as Dictionary):
 			equipment[slot] = str(data["equipment"][slot])
 		hero_health = float(data.get("hero_health", -1.0))
+	# Version 3: the open world.
+	world_mode = str(data.get("scene", "village")) == "world"
+	world_day = int(data.get("world_day", 1))
+	world_hour = float(data.get("world_hour", WORLD.start_hour))
+	for id: Variant in (data.get("discovered", []) as Array):
+		discovered[str(id)] = true
+	for group: String in (data.get("world_cleared", {}) as Dictionary):
+		world_cleared[group] = int(data["world_cleared"][group])
+	var spot: Array = data.get("world_position", [])
+	has_world_position = spot.size() == 3
+	if has_world_position:
+		world_position = Vector3(spot[0], spot[1], spot[2])
+	var horse: Array = data.get("horse_position", [])
+	has_horse_position = horse.size() == 3
+	if has_horse_position:
+		horse_position = Vector3(horse[0], horse[1], horse[2])
 	play_intro = false
 
 #endregion
