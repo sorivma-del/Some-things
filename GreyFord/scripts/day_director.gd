@@ -33,6 +33,7 @@ func _ready_bed() -> void:
 
 
 func _ready() -> void:
+	add_to_group(&"day_director")
 	_ready_bed()
 	if GameState.play_intro:
 		GameState.save_game()  # Day 1 dawn; the intro cutscene starts the day.
@@ -86,6 +87,16 @@ func _sleep() -> void:
 	GameState.lock_controls()
 	await Transition.fade_out(1.2)
 	await _start_morning()
+
+
+## Debug (F3): at day the remaining actions are spent, so the evening comes as soon as
+## Mara is free; at night she goes to sleep.
+func debug_skip() -> void:
+	if GameState.phase == GameState.Phase.NIGHT:
+		_sleep()
+	else:
+		GameState.slots_used = GameState.config.slots_per_day
+		GameState.time_changed.emit()
 
 
 ## Caught by a hunter: led to Helga's door, herbs taken, trust lost; the night is over.

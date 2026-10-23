@@ -55,7 +55,7 @@ GreyFord/
 ```
 
 Автолоады: `GameState` (флаги, статы, блокировка управления), `DialogueRunner` (запуск
-диалогов, проверки навыков).
+диалогов, проверки навыков), `Transition` (затемнения), `DebugMenu` (F3).
 
 ## Архитектура
 
@@ -131,6 +131,11 @@ GreyFord/
 - Сохранение v2: `coins`, `items`, `equipment`, `hero_health`. `PlayerCombat` держит
   `GameState.hero_health` в синхроне; сон даёт `sleep_heal`.
 - Автотест `tools/tests/world_test.gd` (с `-- --skip-intro`).
+
+## Отладка (шаг 5)
+
+- Автолоад `DebugMenu` (`scripts/autoload/debug_menu.gd`), F3 ловится в `_input` (работает
+  и во время диалогов). Пропуск дня — `DayDirector.debug_skip()` (группа `day_director`).
 
 ## Правила
 
