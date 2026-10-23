@@ -3,7 +3,8 @@ extends Node3D
 ## pillars (to check the camera keeps out of walls), two campfires to rest at, two straw
 ## dummies and a sparring swordsman. Runs without the rest of the game.
 ## Keys 1–4 bring in enemies (wolf pack, bandit, infected, bandit chief) in front of Mara,
-## 5 switches day and night, 0 clears them. The yard has a navigation mesh baked at start.
+## 5 switches day and night, 0 clears them, Esc returns to the main menu.
+## The yard has a navigation mesh baked at start.
 
 const SIZE := 30.0
 const WALL_HEIGHT := 3.0
@@ -14,11 +15,12 @@ const ENEMIES: Dictionary[String, PackedScene] = {
 	"infected": preload("res://scenes/enemies/infected.tscn"),
 	"chief": preload("res://scenes/enemies/bandit_chief.tscn"),
 }
+const MENU_SCENE := "res://scenes/main_menu.tscn"
 const SPAWN_KEYS: Dictionary[Key, String] = {KEY_1: "wolf", KEY_2: "bandit", KEY_3: "infected", KEY_4: "chief"}
 
 ## Coins in Mara's purse when the arena opens (to see the death penalty).
 @export var start_coins: int = 40
-@export var hint: String = "J / ЛКМ — удар · Shift — блок · Пробел — перекат · Q / СКМ — захват цели · Tab — сменить цель\n1 волки · 2 разбойник · 3 заражённый · 4 атаман · 5 день/ночь · 0 убрать врагов"
+@export var hint: String = "J / ЛКМ — удар · Shift — блок · Пробел — перекат · Q / СКМ — захват цели · Tab — сменить цель\n1 волки · 2 разбойник · 3 заражённый · 4 атаман · 5 день/ночь · 0 убрать врагов · Esc — в меню"
 ## Wolves come as a pack of this many.
 @export var wolf_pack_size: int = 3
 
@@ -33,6 +35,7 @@ func _ready() -> void:
 	_bake_navigation()
 	get_tree().call_group(&"hud", &"set_day_status_visible", false)
 	get_tree().call_group(&"hud", &"set_objective", hint)
+	Transition.fade_in(0.8)
 
 
 func _build_yard() -> void:
@@ -71,6 +74,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		toggle_night()
 	elif key.physical_keycode == KEY_0:
 		clear_enemies()
+	elif key.physical_keycode == KEY_ESCAPE:
+		_back_to_menu()
+
+
+func _back_to_menu() -> void:
+	GameState.lock_controls()
+	await Transition.fade_out(0.6)
+	Engine.time_scale = 1.0
+	GameState.reset_controls()
+	get_tree().change_scene_to_file(MENU_SCENE)
 
 
 ## Brings in an enemy (a pack, for wolves) 9 m in front of Mara.

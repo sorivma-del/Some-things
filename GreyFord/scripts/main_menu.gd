@@ -1,7 +1,8 @@
 extends Control
-## Main menu: new game, continue from the last dawn autosave, quit.
+## Main menu: new game, continue from the last dawn autosave, the combat arena, quit.
 
 const GAME_SCENE := "res://scenes/main.tscn"
+const ARENA_SCENE := "res://scenes/test/combat_arena.tscn"
 const BACKGROUND: Texture2D = preload("res://resources/ui/menu_background.jpg")
 
 var _continue: Button
@@ -40,6 +41,7 @@ func _ready() -> void:
 	_continue = _button("Продолжить", _on_continue)
 	_continue.disabled = not GameState.has_save()
 	column.add_child(_continue)
+	column.add_child(_button("Арена (бой)", _on_arena))
 	column.add_child(_button("Выход", func() -> void: get_tree().quit()))
 	Transition.fade_in(0.8)
 
@@ -48,6 +50,12 @@ func _on_play() -> void:
 	GameState.new_game()
 	await Transition.fade_out(0.8)
 	get_tree().change_scene_to_file(GAME_SCENE)
+
+
+func _on_arena() -> void:
+	GameState.new_game()
+	await Transition.fade_out(0.8)
+	get_tree().change_scene_to_file(ARENA_SCENE)
 
 
 func _on_continue() -> void:
