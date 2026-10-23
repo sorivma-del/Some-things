@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/enemy_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/combat/enemy_attack.gd" id="2_attack"]
+[ext_resource type="Script" path="res://scripts/combat/loot_table.gd" id="3_loot"]
+
+[sub_resource type="Resource" id="chop"]
+script = ExtResource("2_attack")
+display_name = "Удар топором"
+animation = &"Sword_Attack"
+strike_moment = 0.42
+damage = 22.0
+knockback = 5.0
+attack_range = 2.2
+windup = 0.6
+active = 0.18
+recovery = 0.6
+hitbox_size = Vector3(1.6, 1.5, 1.7)
+telegraph_color = Color(1, 0.55, 0.15, 1)
+
+[sub_resource type="Resource" id="dash"]
+script = ExtResource("2_attack")
+display_name = "Бросок с топором"
+animation = &"Sword_Dash"
+strike_moment = 0.45
+damage = 20.0
+knockback = 6.0
+attack_range = 4.5
+windup = 0.55
+active = 0.3
+recovery = 0.7
+lunge_speed = 9.0
+hitbox_size = Vector3(1.4, 1.5, 1.6)
+telegraph_color = Color(1, 0.15, 0.1, 1)
+weight = 1.5
+
+[sub_resource type="Resource" id="loot"]
+script = ExtResource("3_loot")
+coins_min = 30
+coins_max = 50
+max_items = 2
+item_ids = PackedStringArray("wormwood", "elecampane", "burnet")
+item_chances = PackedFloat32Array(1.0, 1.0, 0.5)
+item_counts = PackedInt32Array(2, 2, 1)
+
+[resource]
+script = ExtResource("1_data")
+display_name = "Атаман Ржа"
+max_health = 220.0
+move_speed = 2.0
+sight_radius = 14.0
+knockback_taken = 0.5
+stagger_time = 0.5
+revive_time = 0.0
+attacks = Array[ExtResource("2_attack")]([SubResource("chop")])
+chase_speed = 3.3
+attack_interval = 1.5
+poise = 40.0
+leash_distance = 40.0
+loot = SubResource("loot")
+phase_two_health = 0.5
+phase_two_attacks = Array[ExtResource("2_attack")]([SubResource("dash")])
+phase_two_speed_multiplier = 1.35
+phase_two_interval_multiplier = 0.6

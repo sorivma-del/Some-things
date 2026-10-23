@@ -15,6 +15,8 @@ signal caught(herbs_lost: int)
 signal notified(text: String)
 signal trust_changed(npc: String, value: int, delta: int)
 signal coins_changed(coins: int)
+## A bandit's parley ended: outcome is "bribe", "persuade" or "fight".
+signal parley_resolved(enemy_id: String, outcome: String)
 
 enum Phase { DAY, NIGHT }
 
@@ -45,6 +47,12 @@ var coins: int = 0:
 ## Where Mara comes back after falling in a fight (the last campfire she rested at).
 var respawn_point: Vector3 = Vector3.ZERO
 var has_respawn_point: bool = false
+## Things picked up that are not herbs (item id -> count); step 3 gives them names and use.
+var items: Dictionary[String, int] = {}
+## The enemy Mara is talking down right now, and its price and difficulty (for the dialogue).
+var parley_enemy: String = ""
+var parley_bribe: int = 0
+var parley_difficulty: int = 0
 ## Free-form story flags for dialogues beyond the named ones below.
 var flags: Dictionary[String, bool] = {}
 ## True while a new game should open with the intro cutscene.
@@ -147,6 +155,20 @@ func add_herb(id: String, spot_id: String) -> void:
 	picked_spots.append(spot_id)
 	inventory_changed.emit()
 	notified.emit("+1  %s" % herb_name(id))
+
+
+## Loot from a fallen enemy or a found cache: coins, herbs or items. Returns a line for the HUD.
+func add_loot(id: String, count: int) -> String:
+	if id == "coins":
+		coins += count
+		return "+%d  монет" % count
+	if config.herb_ids.has(id):
+		herbs[id] = herbs.get(id, 0) + count
+		inventory_changed.emit()
+		return "+%d  %s" % [count, herb_name(id)]
+	items[id] = items.get(id, 0) + count
+	inventory_changed.emit()
+	return "+%d  %s" % [count, id]
 
 
 ## Doses that can be brewed from the herbs in hand (one of each herb per dose).
@@ -254,6 +276,23 @@ func register_caught() -> void:
 #endregion
 
 
+#region Parley
+
+## Dialogue helpers for a bandit that stopped Mara (see dialogues/bandit.dialogue).
+func can_bribe() -> bool:
+	return parley_bribe > 0 and coins >= parley_bribe
+
+
+func resolve_parley(outcome: String) -> void:
+	if outcome == "bribe":
+		coins -= parley_bribe
+	if not parley_enemy.is_empty():
+		set_flag("%s_%s" % [parley_enemy, outcome])
+	parley_resolved.emit(parley_enemy, outcome)
+
+#endregion
+
+
 #region Control lock
 
 ## Lock/unlock are counted so a cutscene and a dialogue can overlap safely.
@@ -301,6 +340,7 @@ func new_game() -> void:
 	in_forest = false
 	coins = 0
 	has_respawn_point = false
+	items.clear()
 
 
 func has_save() -> bool:

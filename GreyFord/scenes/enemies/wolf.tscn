@@ -1,0 +1,27 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/enemy.gd" id="1_enemy"]
+[ext_resource type="Resource" path="res://resources/combat/wolf.tres" id="2_data"]
+[ext_resource type="Script" path="res://scripts/animal_model.gd" id="3_model"]
+[ext_resource type="PackedScene" path="res://resources/models/animals/Wolf.gltf" id="4_wolf"]
+
+[node name="Wolf" type="CharacterBody3D"]
+script = ExtResource("1_enemy")
+data = ExtResource("2_data")
+hurtbox_radius = 0.5
+hurtbox_height = 1.0
+eye_height = 0.6
+body_radius = 0.3
+body_height = 0.8
+body_length = 1.3
+telegraph_point = Vector3(0, 0.6, -0.7)
+anim_idle = &"Idle"
+anim_walk = &"Walk"
+anim_run = &"Gallop"
+anim_hit = &"Idle_HitReact1"
+anim_death = &"Death"
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("3_model")
+scene = ExtResource("4_wolf")
+model_scale = 0.3

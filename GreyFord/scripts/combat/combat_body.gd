@@ -16,6 +16,9 @@ const FLASH_COLOR := Color(1.0, 0.25, 0.15)
 @export var lock_name: String = ""
 @export var hurtbox_radius: float = 0.4
 @export var hurtbox_height: float = 1.6
+## Resting colour of the overlay that flashes red on hits (alpha 0 = none). A faint
+## tint marks e.g. the infected; telegraphs of weaponless beasts brighten it.
+@export var overlay_base: Color = Color(1.0, 0.25, 0.15, 0.0)
 
 var health: float
 var dead: bool = false
@@ -47,7 +50,7 @@ func _ready() -> void:
 
 	_flash.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_flash.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_flash.albedo_color = Color(FLASH_COLOR, 0.0)
+	_flash.albedo_color = overlay_base
 
 
 func can_be_locked() -> bool:
@@ -113,7 +116,7 @@ func _stood_up() -> void:
 
 func _flash_once() -> void:
 	var tween := create_tween()
-	tween.tween_property(_flash, ^"albedo_color:a", 0.0, 0.18).from(0.65)
+	tween.tween_property(_flash, ^"albedo_color", overlay_base, 0.18).from(Color(FLASH_COLOR, 0.65))
 
 
 func _damage_number(amount: float) -> void:

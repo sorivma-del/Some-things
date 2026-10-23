@@ -1,0 +1,25 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/enemy.gd" id="1_enemy"]
+[ext_resource type="Resource" path="res://resources/combat/bandit.tres" id="2_data"]
+[ext_resource type="Script" path="res://scripts/character_model.gd" id="3_model"]
+[ext_resource type="PackedScene" path="res://resources/models/characters/base/Superhero_Male_FullBody.gltf" id="4_body"]
+[ext_resource type="PackedScene" path="res://resources/models/characters/outfits/Male_Ranger.gltf" id="5_outfit"]
+[ext_resource type="PackedScene" path="res://resources/models/characters/hair/Hair_Beard.gltf" id="6_hair"]
+[ext_resource type="PackedScene" path="res://resources/models/props/Sword_Bronze.gltf" id="7_sword"]
+[ext_resource type="Resource" path="res://dialogues/bandit.dialogue" id="8_talk"]
+
+[node name="Bandit" type="CharacterBody3D"]
+script = ExtResource("1_enemy")
+data = ExtResource("2_data")
+weapon_scene = ExtResource("7_sword")
+anim_idle = &"Sword_Idle"
+parley = ExtResource("8_talk")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("3_model")
+base_scene = ExtResource("4_body")
+parts = Array[PackedScene]([ExtResource("5_outfit"), ExtResource("6_hair")])
+head_only_parts = PackedStringArray("Superhero_Male")
+tint = Color(0.75, 0.72, 0.7, 1)
+default_animation = &"Sword_Idle"

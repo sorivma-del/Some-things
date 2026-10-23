@@ -5,14 +5,13 @@ extends CharacterBody3D
 ## PATROL -> SUSPICIOUS (stops, stares) -> CHASE (runs at her) -> SEARCH (checks where
 ## she was last seen) -> back to PATROL. Reaching her during a chase emits `caught_player`.
 ## Cover reduces how fast he notices her (Player.concealment); hiding makes her invisible.
+## Eyes and the alertness meter are a StealthSense, shared with enemies.
 
 signal caught_player
 signal state_changed(state: State)
 
 enum State { PATROL, SUSPICIOUS, CHASE, SEARCH }
 
-const EYE_HEIGHT := 1.6
-const TARGET_HEIGHT := 1.0
 const CATCH_DISTANCE := 1.3
 
 @export var route: PackedVector3Array = []
@@ -28,10 +27,17 @@ const CATCH_DISTANCE := 1.3
 @export var lose_sight_time: float = 2.5
 
 var state: State = State.PATROL
-var alertness: float = 0.0
+var alertness: float:
+	get:
+		return _sense.alertness
+	set(value):
+		_sense.alertness = value
 
 var _route_index: int = 0
-var _last_seen: Vector3
+var _sense := StealthSense.new()
+var _last_seen: Vector3:
+	get:
+		return _sense.last_seen
 var _timer: float = 0.0
 var _unseen_time: float = 0.0
 var _search_turn: float = 0.0
@@ -44,6 +50,10 @@ var _marker := Label3D.new()
 
 func _ready() -> void:
 	add_to_group(&"guards")
+	_sense.view_distance = view_distance
+	_sense.view_angle_degrees = view_angle_degrees
+	_sense.notice_rate = notice_rate
+	_sense.forget_rate = forget_rate
 	_marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_marker.no_depth_test = true
 	_marker.font = UiStyle.font(700)
@@ -114,14 +124,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _update_alertness(sees: bool, delta: float) -> void:
-	if sees:
-		_last_seen = _player.global_position
-		var distance := global_position.distance_to(_player.global_position)
-		var closeness := clampf(1.0 - distance / view_distance, 0.15, 1.0)
-		var visibility := 1.0 - (_player.get(&"concealment") as float)
-		alertness = minf(alertness + notice_rate * closeness * visibility * delta * 1.6, 1.0)
-	elif state != State.CHASE:
-		alertness = maxf(alertness - forget_rate * delta, 0.0)
+	_sense.update(sees, self, _player, delta, state == State.CHASE)
 
 	if state == State.PATROL and alertness >= suspicious_threshold:
 		_set_state(State.SUSPICIOUS)
@@ -132,22 +135,7 @@ func _update_alertness(sees: bool, delta: float) -> void:
 
 
 func _can_see_player() -> bool:
-	if _player == null or (_player.get(&"hidden") as bool):
-		return false
-	var eye := global_position + Vector3.UP * EYE_HEIGHT
-	var target := _player.global_position + Vector3.UP * TARGET_HEIGHT
-	var to := target - eye
-	if to.length() > view_distance:
-		return false
-	var forward := -_model.global_basis.z
-	forward.y = 0.0
-	var flat := Vector3(to.x, 0.0, to.z)
-	# Within arm's reach he hears her even outside the cone.
-	if flat.length() > 1.6 and rad_to_deg(forward.angle_to(flat)) > view_angle_degrees:
-		return false
-	var query := PhysicsRayQueryParameters3D.create(eye, target, 1)
-	query.exclude = [get_rid(), (_player as CollisionObject3D).get_rid()]
-	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+	return _sense.can_see(self, -_model.global_basis.z, _player)
 
 
 func _set_state(new_state: State) -> void:

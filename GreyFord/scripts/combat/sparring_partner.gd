@@ -56,6 +56,7 @@ func _ready() -> void:
 	sword.add_child(_glow_light)
 
 	_hitbox.body = self
+	_hitbox.only_group = &"player"
 	_hitbox.set_size(Vector3(1.3, 1.4, 1.5))
 	_hitbox.position = Vector3(0, 1.0, -0.9)
 	_model.add_child(_hitbox)

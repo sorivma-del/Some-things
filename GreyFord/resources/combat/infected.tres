@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/enemy_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/combat/enemy_attack.gd" id="2_attack"]
+[ext_resource type="Script" path="res://scripts/combat/loot_table.gd" id="3_loot"]
+
+[sub_resource type="Resource" id="maul"]
+script = ExtResource("2_attack")
+display_name = "Удар наотмашь"
+animation = &"Zombie_Scratch"
+strike_moment = 0.55
+damage = 28.0
+knockback = 6.0
+attack_range = 1.9
+windup = 0.9
+active = 0.2
+recovery = 0.9
+hitbox_size = Vector3(1.5, 1.5, 1.5)
+telegraph_color = Color(0.75, 0.95, 0.25, 1)
+
+[sub_resource type="Resource" id="loot"]
+script = ExtResource("3_loot")
+coins_min = 0
+coins_max = 4
+max_items = 1
+item_ids = PackedStringArray("wormwood")
+item_chances = PackedFloat32Array(0.3)
+item_counts = PackedInt32Array(1)
+
+[resource]
+script = ExtResource("1_data")
+display_name = "Заражённый"
+max_health = 150.0
+move_speed = 0.9
+sight_radius = 9.0
+knockback_taken = 0.4
+stagger_time = 0.5
+revive_time = 0.0
+attacks = Array[ExtResource("2_attack")]([SubResource("maul")])
+chase_speed = 1.5
+view_angle_degrees = 50.0
+notice_rate = 0.9
+attack_interval = 1.8
+poise = 45.0
+loot = SubResource("loot")
+night_speed_multiplier = 1.5
+night_sight_multiplier = 1.4
+night_interval_multiplier = 0.7

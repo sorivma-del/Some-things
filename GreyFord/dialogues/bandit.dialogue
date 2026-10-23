@@ -1,0 +1,32 @@
+~ start
+Разбойник: Стой, травница. Дальше лес платный.
+Разбойник: Кошель на землю — и иди себе.
+=> choices
+
+~ choices
+- Заплатить {{GameState.parley_bribe}} монет. [if GameState.can_bribe() /] => bribe
+- Денег нет. Есть только травы, и те для больных. [if GameState.parley_difficulty > 0 /] => persuade
+- Уйди с дороги. => fight
+
+~ bribe
+Мара: Держи. И забудь, что видел.
+$> GameState.resolve_parley("bribe")
+Разбойник: Вот и умница. Ступай.
+=> END
+
+~ persuade
+Мара: Я из Серого Брода. Там мор. Тронешь меня — унесёшь его с собой.
+$> DialogueRunner.roll_check("persuasion", GameState.parley_difficulty)
+if DialogueRunner.last_check_passed
+	Разбойник: ...Из Брода?
+	Разбойник: Иди. Иди, говорю, и не подходи.
+	$> GameState.resolve_parley("persuade")
+	=> END
+Разбойник: Сказки. Все вы с мором, когда платить надо.
+$> GameState.resolve_parley("fight")
+=> END
+
+~ fight
+Мара: Попробуй возьми.
+$> GameState.resolve_parley("fight")
+=> END

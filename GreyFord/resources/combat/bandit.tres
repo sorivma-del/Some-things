@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/enemy_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/combat/enemy_attack.gd" id="2_attack"]
+[ext_resource type="Script" path="res://scripts/combat/loot_table.gd" id="3_loot"]
+
+[sub_resource type="Resource" id="slash"]
+script = ExtResource("2_attack")
+display_name = "Рубящий удар"
+animation = &"Sword_Attack"
+strike_moment = 0.42
+damage = 16.0
+knockback = 4.0
+attack_range = 2.0
+windup = 0.5
+active = 0.15
+recovery = 0.55
+hitbox_size = Vector3(1.3, 1.4, 1.5)
+telegraph_color = Color(1, 0.55, 0.15, 1)
+
+[sub_resource type="Resource" id="loot"]
+script = ExtResource("3_loot")
+coins_min = 6
+coins_max = 14
+max_items = 2
+item_ids = PackedStringArray("elecampane", "wormwood")
+item_chances = PackedFloat32Array(0.4, 0.3)
+item_counts = PackedInt32Array(1, 1)
+
+[resource]
+script = ExtResource("1_data")
+display_name = "Разбойник"
+max_health = 90.0
+move_speed = 1.8
+sight_radius = 13.0
+stagger_time = 0.45
+revive_time = 0.0
+attacks = Array[ExtResource("2_attack")]([SubResource("slash")])
+chase_speed = 3.2
+view_angle_degrees = 60.0
+attack_interval = 1.4
+poise = 25.0
+loot = SubResource("loot")
+bribe_cost = 15
+persuade_difficulty = 13

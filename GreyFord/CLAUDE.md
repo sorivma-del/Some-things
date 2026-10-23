@@ -96,6 +96,21 @@ GreyFord/
 - `RespawnPoint` у костра запоминает `GameState.respawn_point`; монеты — `GameState.coins`.
 - Тестовая арена `scenes/test/combat_arena.tscn`, автотест `tools/tests/combat_test.gd`.
 
+## Мобы (шаг 2)
+
+- `Enemy` (extends `CombatBody`) — враги: `StealthSense` (общий с `Guard`: конус + луч +
+  шкала тревоги) и состояния PATROL/SUSPICIOUS/CHASE/SEARCH/ATTACK/STAGGER/RETREAT/
+  PARLEY/CALM/DEAD; путь через `NavigationAgent3D` (без навмеша — по прямой).
+- `EnemyData` (.tres) — здоровье, скорости, зрение, стойкость, `attacks: Array[EnemyAttack]`,
+  ночные множители, вторая фаза, подкуп/убеждение, `LootTable`.
+- `EnemyAttack` — клип и момент удара, урон, окна windup/active/recovery, хитбокс, цвет
+  телеграфа (светится оружие или сам зверь), отскок.
+- Сцены `scenes/enemies/` (wolf, bandit, infected, bandit_chief). `AnimatedModel` — общий
+  API анимаций для `CharacterModel` и `AnimalModel` (Quaternius-животные).
+- Разбойник при первой встрече запускает `dialogues/bandit.dialogue`;
+  `GameState.resolve_parley()` пишет флаг `<id>_<исход>`. Лут — `LootDrop` → `GameState.add_loot()`.
+- Автотест `tools/tests/enemy_test.gd`.
+
 ## Правила
 
 - Только Godot 4 API. Никаких `yield`, `onready var` без `@`, `KinematicBody` и т.п.

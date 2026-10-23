@@ -6,5 +6,6 @@
 | Что | Чем заменить заглушку | Где взять | Лицензия |
 |---|---|---|---|
 | Звуки боя: взмах, удар, блок о щит | `ProceduralSound.swing/hit/block` (синтез кодом) | https://kenney.nl/assets/impact-sounds, https://kenney.nl/assets/rpg-audio | CC0 |
-| Волк (шаг 2) | пока не нужен | Quaternius Ultimate Animated Animals: https://quaternius.com/packs/ultimateanimatedanimals.html | CC0 |
-| Заражённый (шаг 2) | модульный персонаж + анимации `Zombie_*` из UAL2 (уже есть) | — | CC0 |
+| Заражённый: своя модель (лохмотья, бледная кожа) | обычный мужчина + зеленоватая плёнка + анимации `Zombie_*` | Quaternius Zombie Apocalypse Kit: https://quaternius.com/packs/zombieapocalypsekit.html | CC0 |
+| Разбойник: отличимый наряд | тот же наряд следопыта, что у дозорных, + борода и меч | Quaternius Modular Character Outfits – Fantasy (полная версия) | CC0 |
+| Волк серый, а не белый | белый волк Quaternius | перекрасить текстуру/материал при желании | CC0 |

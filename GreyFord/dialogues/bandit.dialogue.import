@@ -1,0 +1,16 @@
+[remap]
+
+importer="dialogue_manager"
+importer_version=18
+type="Resource"
+uid="uid://bt0bdwqdvfr6y"
+path="res://.godot/imported/bandit.dialogue-a70fa85ccc22f0a181402bbc78c76df0.tres"
+
+[deps]
+
+source_file="res://dialogues/bandit.dialogue"
+dest_files=["res://.godot/imported/bandit.dialogue-a70fa85ccc22f0a181402bbc78c76df0.tres"]
+
+[params]
+
+defaults=true
