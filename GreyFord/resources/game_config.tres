@@ -37,3 +37,7 @@ start_equipment = Dictionary[String, String]({
 start_items = Dictionary[String, int]({
 "bandage": 2
 })
+forest_wolves_per_day = PackedInt32Array(3, 3, 3)
+forest_bandits_per_day = PackedInt32Array(1, 1, 2)
+night_infected_per_night = PackedInt32Array(0, 2)
+sleep_heal = 40.0

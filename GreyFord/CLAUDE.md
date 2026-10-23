@@ -123,6 +123,15 @@ GreyFord/
 - `PlayerCombat.attack_damage()`, броня и щит из экипировки; H — `use_item` лучшего бинта.
 - Таблица баланса — `docs/economy.md`. Автотест `tools/tests/trade_test.gd`.
 
+## Интеграция (шаг 4)
+
+- В `main.tscn`: `Player/Combat` (бой везде), `Campfire/RespawnPoint`, `Encounters`
+  (волки и разбойники в лесу по дням, заражённые ночью; числа в `game_config.tres`,
+  убитые по флагу `<id>_killed` не появляются), `Market` (торговцы днём).
+- Сохранение v2: `coins`, `items`, `equipment`, `hero_health`. `PlayerCombat` держит
+  `GameState.hero_health` в синхроне; сон даёт `sleep_heal`.
+- Автотест `tools/tests/world_test.gd` (с `-- --skip-intro`).
+
 ## Правила
 
 - Только Godot 4 API. Никаких `yield`, `onready var` без `@`, `KinematicBody` и т.п.

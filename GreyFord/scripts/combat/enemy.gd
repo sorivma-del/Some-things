@@ -17,6 +17,10 @@ const LOOT_SCRIPT := preload("res://scripts/combat/loot_drop.gd")
 ## Keeps tracking Mara for this share of the windup, then commits to the blow.
 const TRACK_SHARE := 0.6
 const PARLEY_DISTANCE := 2.4
+## Barely moving for this long while trying to walk = stuck on a tree or a barrel.
+const STUCK_TIME := 0.8
+const DETOUR_TIME := 0.8
+const DETOUR_ANGLE := 1.2
 
 static var _spawned: int = 0
 
@@ -48,6 +52,8 @@ static var _spawned: int = 0
 
 var state: State = State.PATROL
 var attack: EnemyAttack
+## Spotted (or was struck by) Mara at least once since it appeared.
+var noticed: bool = false
 var phase_two: bool = false
 var sense := StealthSense.new()
 
@@ -69,6 +75,11 @@ var _home: Vector3
 var _flank: float = 0.0
 var _nav_target: Vector3 = Vector3.INF
 var _retreat_time: float = 0.0
+var _last_position: Vector3
+var _stuck_time: float = 0.0
+var _stuck_count: int = 0
+var _detour_time: float = 0.0
+var _detour_angle: float = DETOUR_ANGLE
 var _retreat_speed: float = 0.0
 var _player: Node3D
 var _rng := RandomNumberGenerator.new()
@@ -206,6 +217,7 @@ func _physics_process(delta: float) -> void:
 	velocity.x = move.x + _knockback.x
 	velocity.z = move.z + _knockback.z
 	move_and_slide()
+	_check_stuck(move, delta)
 	_animate(Vector2(move.x, move.z).length())
 
 
@@ -226,6 +238,7 @@ func _update_awareness(sees: bool) -> void:
 
 ## Spotted Mara: talk first (bandits, once) or fight, and call the pack.
 func _notice() -> void:
+	noticed = true
 	if parley and not GameState.has_flag("%s_parley" % enemy_id) and (data.bribe_cost > 0 or data.persuade_difficulty > 0):
 		GameState.set_flag("%s_parley" % enemy_id)
 		_set_state(State.PARLEY)
@@ -239,6 +252,12 @@ func _notice() -> void:
 				ally.join_hunt(sense.last_seen)
 
 
+## Already bought off or talked down (e.g. after a reload): stands aside from the start.
+func start_calm() -> void:
+	GameState.set_flag("%s_parley" % enemy_id)
+	_set_state(State.CALM)
+
+
 ## Turns to look at a point (spawning, cutscenes).
 func face_point(point: Vector3) -> void:
 	_face(point, 1.0, 1000.0)
@@ -248,6 +267,7 @@ func face_point(point: Vector3) -> void:
 func join_hunt(point: Vector3) -> void:
 	if _is_fighting() or state == State.CALM or dead:
 		return
+	noticed = true
 	sense.alertness = 1.0
 	sense.last_seen = point
 	_set_state(State.CHASE)
@@ -297,6 +317,32 @@ func _search(delta: float) -> Vector3:
 	return Vector3.ZERO
 
 
+## Without a navigation mesh enemies walk straight and can catch on trees: when they
+## barely move, they sidestep at an angle for a moment; on patrol a waypoint they cannot
+## reach is skipped.
+func _check_stuck(move: Vector3, delta: float) -> void:
+	var wanted := Vector2(move.x, move.z).length()
+	var moved := Vector2(global_position.x - _last_position.x, global_position.z - _last_position.z).length()
+	_last_position = global_position
+	_detour_time = maxf(_detour_time - delta, 0.0)
+	if wanted < 0.3 or _detour_time > 0.0:
+		_stuck_time = 0.0
+		return
+	if moved < wanted * delta * 0.25:
+		_stuck_time += delta
+	else:
+		_stuck_time = 0.0
+		_stuck_count = 0
+	if _stuck_time > STUCK_TIME:
+		_stuck_time = 0.0
+		_stuck_count += 1
+		_detour_time = DETOUR_TIME
+		_detour_angle = -_detour_angle
+		if state == State.PATROL and _stuck_count >= 2 and route.size() > 0:
+			_route_index = (_route_index + 1) % route.size()
+			_stuck_count = 0
+
+
 ## Direction to walk towards `target`, along the navigation mesh when there is one.
 func _steer(target: Vector3) -> Vector3:
 	if _nav_target.distance_to(target) > 0.5:
@@ -312,6 +358,8 @@ func _steer(target: Vector3) -> Vector3:
 	if to.length() < 0.05:
 		return Vector3.ZERO
 	var direction := to.normalized()
+	if _detour_time > 0.0:
+		direction = direction.rotated(Vector3.UP, _detour_angle)
 	_face(global_position + direction, get_physics_process_delta_time(), 8.0)
 	return direction
 
@@ -393,6 +441,7 @@ func _telegraph(charge: float) -> void:
 func _struck(info: HitInfo) -> void:
 	if state == State.CALM or state == State.PARLEY:
 		GameState.set_flag("%s_attacked" % enemy_id)
+	noticed = true
 	sense.alertness = 1.0
 	if info.source:
 		sense.last_seen = info.source.global_position

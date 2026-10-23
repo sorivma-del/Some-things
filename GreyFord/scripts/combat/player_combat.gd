@@ -57,9 +57,12 @@ func _ready() -> void:
 	add_to_group(GROUP)
 	_body = get_parent() as CharacterBody3D
 	_model = _body.get_node(^"Model") as CharacterModel
-	health = data.max_health
 	stamina = data.max_stamina
 	_spawn_point = _body.global_position
+	# Health carries over between scenes and saves through GameState.hero_health.
+	_sync_health()
+	health_changed.connect(func(value: float, _max_value: float) -> void: GameState.hero_health = value)
+	GameState.time_changed.connect(_sync_health)
 	# Bump into enemies (physics layer 2) instead of walking through them.
 	_body.set_collision_mask_value(2, true)
 
@@ -207,6 +210,13 @@ func is_invulnerable() -> bool:
 	if invulnerable:
 		return true
 	return state == State.ROLL and _state_time >= data.iframes_start and _state_time <= data.iframes_end
+
+
+func _sync_health() -> void:
+	var stored := GameState.hero_health
+	health = data.max_health if stored < 0.0 else clampf(stored, 1.0, data.max_health)
+	GameState.hero_health = health
+	health_changed.emit(health, data.max_health)
 
 
 ## Back at full strength (also used by debug tools).
@@ -364,6 +374,7 @@ func _die() -> void:
 	await Transition.fade_out(0.8)
 	var point := GameState.respawn_point if GameState.has_respawn_point else _spawn_point
 	_body.call(&"teleport", point)
+	GameState.in_forest = false  # Wakes in the village even if she fell in the forest.
 	var lost := ceili(GameState.coins * data.death_coin_loss)
 	GameState.coins -= lost
 	restore()

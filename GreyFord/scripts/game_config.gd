@@ -37,3 +37,13 @@ extends Resource
 @export var start_equipment: Dictionary[String, String] = {"weapon": "bronze_sword", "shield": "wooden_shield", "armor": ""}
 ## Item id -> count in Mara's bag at the start.
 @export var start_items: Dictionary[String, int] = {"bandage": 2}
+
+@export_group("Encounters")
+## Wolves in the forest pack on day 1, 2, 3 (killed ones stay dead).
+@export var forest_wolves_per_day: PackedInt32Array = [3, 3, 3]
+## Bandits on the forest paths on day 1, 2, 3.
+@export var forest_bandits_per_day: PackedInt32Array = [1, 1, 2]
+## Infected in the village on the night after day 1, day 2.
+@export var night_infected_per_night: PackedInt32Array = [0, 2]
+## Health a night's sleep gives back.
+@export var sleep_heal: float = 40.0

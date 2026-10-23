@@ -13,6 +13,10 @@
 [ext_resource type="Script" path="res://scripts/forest_zone.gd" id="11_forest"]
 [ext_resource type="Script" path="res://scripts/day_director.gd" id="12_days"]
 [ext_resource type="Script" path="res://scripts/cauldron.gd" id="13_cauldron"]
+[ext_resource type="Script" path="res://scripts/combat/player_combat.gd" id="14_combat"]
+[ext_resource type="Script" path="res://scripts/combat/respawn_point.gd" id="15_respawn"]
+[ext_resource type="Script" path="res://scripts/encounters.gd" id="16_encounters"]
+[ext_resource type="Script" path="res://scripts/market.gd" id="17_market"]
 
 [node name="Main" type="Node3D"]
 
@@ -21,6 +25,11 @@
 [node name="Village" parent="." instance=ExtResource("2_village")]
 
 [node name="Campfire" parent="." instance=ExtResource("3_fire")]
+
+[node name="RespawnPoint" type="Area3D" parent="Campfire"]
+script = ExtResource("15_respawn")
+radius = 4.0
+message = ""
 
 [node name="ForestZone" type="Node3D" parent="."]
 script = ExtResource("11_forest")
@@ -42,6 +51,15 @@ rotation = Vector3(0, 0.108, 0)
 
 [node name="Player" parent="." instance=ExtResource("5_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 3.5)
+
+[node name="Combat" type="Node" parent="Player"]
+script = ExtResource("14_combat")
+
+[node name="Encounters" type="Node3D" parent="."]
+script = ExtResource("16_encounters")
+
+[node name="Market" type="Node3D" parent="."]
+script = ExtResource("17_market")
 
 [node name="CameraRig" parent="." node_paths=PackedStringArray("target") instance=ExtResource("6_rig")]
 target = NodePath("../Player")

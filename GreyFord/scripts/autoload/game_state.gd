@@ -33,7 +33,7 @@ const MERCHANTS: Dictionary[String, MerchantData] = {
 }
 const EQUIPMENT_SLOTS: PackedStringArray = ["weapon", "shield", "armor"]
 const SAVE_PATH := "user://greyford_save.json"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 
 var stats: CharacterStats = HERO_STATS
 var config: GameConfig = CONFIG
@@ -57,6 +57,8 @@ var coins: int = 0:
 ## Where Mara comes back after falling in a fight (the last campfire she rested at).
 var respawn_point: Vector3 = Vector3.ZERO
 var has_respawn_point: bool = false
+## Mara's health between scenes and in saves (PlayerCombat keeps it in step); <0 = full.
+var hero_health: float = -1.0
 ## Mara's bag apart from herbs and the remedy (item id -> count). See count()/give()/take().
 var items: Dictionary[String, int] = {}
 ## Slot ("weapon", "shield", "armor") -> item id ("" = empty). Worn items stay in `items`.
@@ -143,6 +145,8 @@ func begin_day() -> void:
 	phase = Phase.DAY
 	picked_spots.clear()
 	merchant_stock.clear()  # Traders restock overnight.
+	if hero_health >= 0.0:
+		hero_health += config.sleep_heal  # PlayerCombat clamps to the maximum.
 	time_changed.emit()
 	save_game()
 
@@ -489,6 +493,7 @@ func new_game() -> void:
 	in_forest = false
 	coins = config.start_coins
 	has_respawn_point = false
+	hero_health = -1.0
 	items.clear()
 	for id: String in config.start_items:
 		items[id] = config.start_items[id]
@@ -536,6 +541,10 @@ func to_dict() -> Dictionary:
 		"flags": flags,
 		"talked_helga": talked_helga,
 		"tomash_refused": tomash_refused,
+		"coins": coins,
+		"items": items,
+		"equipment": equipment,
+		"hero_health": hero_health,
 	}
 
 
@@ -555,6 +564,15 @@ func from_dict(data: Dictionary) -> void:
 		flags[flag] = bool(data["flags"][flag])
 	talked_helga = bool(data.get("talked_helga", false))
 	tomash_refused = bool(data.get("tomash_refused", false))
+	# Version 1 saves have no purse or gear: they keep the new-game ones.
+	if data.has("coins"):
+		coins = int(data["coins"])
+		items.clear()
+		for id: String in (data.get("items", {}) as Dictionary):
+			items[id] = int(data["items"][id])
+		for slot: String in (data.get("equipment", {}) as Dictionary):
+			equipment[slot] = str(data["equipment"][slot])
+		hero_health = float(data.get("hero_health", -1.0))
 	play_intro = false
 
 #endregion
