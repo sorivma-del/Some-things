@@ -30,6 +30,6 @@ extends Resource
 @export_group("Look")
 @export var model_scale: float = 0.55
 ## Mara's feet relative to the horse's origin when riding.
-@export var seat: Vector3 = Vector3(0.0, 1.14, -0.12)
+@export var seat: Vector3 = Vector3(0.0, 1.25, -0.12)
 @export var camera_distance: float = 8.0
 @export var camera_height: float = 2.9

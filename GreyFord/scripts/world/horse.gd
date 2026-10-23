@@ -26,6 +26,7 @@ var _since_gallop: float = 100.0
 var _idle_time: float = 0.0
 var _stuck_time: float = 0.0
 var _last_position: Vector3
+var _gait_time: float = 0.0
 
 
 func _ready() -> void:
@@ -49,6 +50,33 @@ func _ready() -> void:
 	_mount.position = Vector3(0, 1.0, 0)
 	add_child(_mount)
 	_mount.interacted.connect(mount)
+	_add_tack()
+
+
+## Saddle and blanket from simple shapes, sitting where Mara rides.
+func _add_tack() -> void:
+	var leather := StandardMaterial3D.new()
+	leather.albedo_color = Color(0.16, 0.09, 0.05)
+	leather.roughness = 0.7
+	var cloth := StandardMaterial3D.new()
+	cloth.albedo_color = Color(0.32, 0.08, 0.06)
+	cloth.roughness = 1.0
+	var seat := data.seat
+	Build.box(self, Vector3(0.62, 0.04, 0.95), seat + Vector3(0, 0.4, 0.02), cloth)
+	Build.box(self, Vector3(0.5, 0.1, 0.6), seat + Vector3(0, 0.45, 0.02), leather)
+	Build.box(self, Vector3(0.36, 0.14, 0.08), seat + Vector3(0, 0.55, -0.28), leather)
+	Build.box(self, Vector3(0.4, 0.1, 0.07), seat + Vector3(0, 0.53, 0.3), leather)
+	for side: float in [-1.0, 1.0]:
+		Build.box(self, Vector3(0.03, 0.5, 0.05), seat + Vector3(side * 0.27, 0.2, 0.0), leather)
+		Build.box(self, Vector3(0.1, 0.03, 0.1), seat + Vector3(side * 0.3, -0.06, 0.0), leather)
+
+
+## Rider's bounce and forward lean for the current gait (used by Player while mounted).
+func rider_motion() -> Vector2:
+	var gallop := clampf((speed - data.trot_speed) / (data.gallop_speed - data.trot_speed), 0.0, 1.0)
+	var trot := clampf(speed / data.trot_speed, 0.0, 1.0)
+	var bounce := sin(_gait_time * TAU) * (0.025 * trot + 0.05 * gallop)
+	return Vector2(bounce, 0.08 * trot + 0.22 * gallop)
 
 
 func is_owned() -> bool:
@@ -207,6 +235,10 @@ func _check_stuck(delta: float) -> void:
 
 
 func _animate(delta: float) -> void:
+	# Legs keep pace with the ground: clip speed follows real speed for each gait.
+	var gait_speed := data.gallop_speed if speed > data.trot_speed + 1.0 else data.trot_speed if speed > data.walk_speed + 0.5 else data.walk_speed
+	_model.set_speed_scale(clampf(speed / gait_speed, 0.6, 1.4) if speed > 0.3 else 1.0)
+	_gait_time += delta * (1.9 if speed > data.trot_speed + 1.0 else 2.6) * clampf(speed / gait_speed, 0.0, 1.4)
 	if speed > data.trot_speed + 1.0:
 		_model.play(&"Gallop")
 	elif speed > data.walk_speed:

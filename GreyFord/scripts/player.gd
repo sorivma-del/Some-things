@@ -33,6 +33,9 @@ var hidden: bool = false:
 var frozen: bool = false
 ## The horse she rides, or null on foot. While riding the horse moves; she sits on it.
 var mount: Node3D = null
+## Climbing on or off: 0..1 progress of the hop between the ground and the saddle.
+var _hop: float = 1.0
+var _hop_from: Vector3
 
 var _cover: Array[HideZone] = []
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -56,9 +59,14 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if mount:
 		var seat: Vector3 = (mount.get(&"data") as Resource).get(&"seat")
-		global_position = mount.global_transform * seat
+		var motion: Vector2 = mount.call(&"rider_motion")
+		var target := mount.global_transform * (seat + Vector3(0, motion.x, 0))
+		_hop = minf(_hop + delta / 0.45, 1.0)
+		# A short arc up from where she stood into the saddle.
+		global_position = _hop_from.lerp(target, smoothstep(0.0, 1.0, _hop)) + Vector3.UP * sin(PI * _hop) * 0.45
 		velocity = Vector3.ZERO
 		_model.global_rotation.y = mount.global_rotation.y
+		_model.rotation.x = -motion.y
 		return
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
@@ -117,6 +125,8 @@ func leave_cover(zone: HideZone) -> void:
 ## Climbs onto a horse: no own collision or interaction prompts while riding.
 func mount_on(horse: Node3D) -> void:
 	mount = horse
+	_hop = 0.0
+	_hop_from = global_position
 	($CollisionShape3D as CollisionShape3D).disabled = true
 	var detector := get_node_or_null(^"InteractionDetector")
 	if detector:
@@ -126,11 +136,16 @@ func mount_on(horse: Node3D) -> void:
 
 func dismount_at(point: Vector3, facing: Vector3) -> void:
 	mount = null
+	_model.rotation.x = 0.0
 	($CollisionShape3D as CollisionShape3D).disabled = false
 	var detector := get_node_or_null(^"InteractionDetector")
 	if detector:
 		detector.process_mode = Node.PROCESS_MODE_INHERIT
+	var from := global_position
 	teleport(point + Vector3.UP * 0.3, facing)
+	# Slide down from the saddle rather than appear on the ground.
+	_model.position = from - global_position
+	create_tween().tween_property(_model, ^"position", Vector3.ZERO, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 
 ## Moves Mara instantly (scene changes between village, forest and bed).

@@ -11,3 +11,8 @@ script = ExtResource("1_horse")
 script = ExtResource("2_model")
 scene = ExtResource("3_horse")
 model_scale = 0.55
+material_tints = Dictionary[String, Color]({
+"Main": Color(0.55, 0.5, 0.48, 1),
+"Main_Dark": Color(0.6, 0.55, 0.52, 1),
+"Main_Light": Color(0.5, 0.45, 0.42, 1)
+})

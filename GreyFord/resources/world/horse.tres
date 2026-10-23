@@ -19,6 +19,6 @@ call_range = 450.0
 call_teleport_distance = 70.0
 arrive_distance = 3.5
 model_scale = 0.55
-seat = Vector3(0, 1.14, -0.12)
+seat = Vector3(0, 1.25, -0.12)
 camera_distance = 8.0
 camera_height = 2.9
