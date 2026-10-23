@@ -35,6 +35,8 @@ const PLACES: Dictionary[String, Dictionary] = {
 
 var terrain: WorldTerrain
 var _map_texture: ImageTexture
+## Mara's lantern: lit after dark, out in the open there is no other light.
+var _lantern := OmniLight3D.new()
 var _rng := RandomNumberGenerator.new()
 var _discover_timer: float = 0.0
 
@@ -58,6 +60,7 @@ func _ready() -> void:
 	add_child(encounters)
 	get_tree().call_group(&"world_lighting", &"set_fog_scale", CONFIG.fog_scale)
 	_arrive.call_deferred()
+	_hang_lantern.call_deferred()
 
 
 func _process(delta: float) -> void:
@@ -92,6 +95,22 @@ func _arrive() -> void:
 	GameState.unlock_controls()
 	if first_time:
 		GameState.save_game()
+
+
+func _hang_lantern() -> void:
+	var player := get_tree().get_first_node_in_group(&"player") as Node3D
+	_lantern.light_color = Color(1.0, 0.7, 0.4)
+	_lantern.light_energy = 1.4
+	_lantern.omni_range = 9.0
+	_lantern.shadow_enabled = false
+	_lantern.position = Vector3(0.4, 1.3, 0.3)
+	player.add_child(_lantern)
+	GameState.time_changed.connect(_update_lantern)
+	_update_lantern()
+
+
+func _update_lantern() -> void:
+	_lantern.visible = GameState.world_period() == "night"
 
 
 ## Called by GameState.save_game(): where Mara and the horse are.
