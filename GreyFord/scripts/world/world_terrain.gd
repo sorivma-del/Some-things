@@ -96,6 +96,43 @@ func is_inside(x: float, z: float, margin: float = 0.0) -> bool:
 	return absf(x) < HALF_WIDTH - margin and z > Z_MIN + margin and z < Z_MIN + DEPTH - margin
 
 
+## A parchment-style map of the land: relief shading, woods, water, roads.
+## One pixel per grid cell (2 m); north (smaller z) at the top.
+func make_map_image() -> Image:
+	var image := Image.create(_nx, _nz, false, Image.FORMAT_RGB8)
+	var paper := Color(0.74, 0.67, 0.52)
+	var wood := Color(0.42, 0.47, 0.33)
+	var water := Color(0.3, 0.37, 0.4)
+	var road := Color(0.47, 0.36, 0.25)
+	var rock := Color(0.6, 0.58, 0.55)
+	for zi: int in _nz:
+		for xi: int in _nx:
+			var i := zi * _nx + xi
+			var x := -HALF_WIDTH + xi * STEP
+			var z := Z_MIN + zi * STEP
+			var h := _heights[i]
+			var color := paper
+			if h > 12.0:
+				color = paper.lerp(rock, clampf((h - 12.0) / 14.0, 0.0, 1.0))
+			if forest_weight(x, z) > 0.5 and h < 14.0:
+				color = color.lerp(wood, 0.75)
+			if _road[i] < 2.2:
+				color = road
+			if h < WATER_LEVEL - 0.3:
+				color = water
+			# Light from the north-west: slopes facing it are brighter.
+			var east := _heights[mini(i + 1, _heights.size() - 1)] if xi < _nx - 1 else h
+			var south := _heights[mini(i + _nx, _heights.size() - 1)] if zi < _nz - 1 else h
+			var shade := clampf(1.0 - (east - h) * 0.12 - (south - h) * 0.12, 0.7, 1.25)
+			image.set_pixel(xi, zi, color * shade)
+	return image
+
+
+## World (x, z) -> 0..1 on the map image.
+static func map_uv(x: float, z: float) -> Vector2:
+	return Vector2((x + HALF_WIDTH) / (HALF_WIDTH * 2.0), (z - Z_MIN) / DEPTH)
+
+
 func forest_weight(x: float, z: float) -> float:
 	return clampf(_hills.get_noise_2d(z * 1.7, x * 1.7) * 0.9 + 0.35, 0.0, 1.0)
 

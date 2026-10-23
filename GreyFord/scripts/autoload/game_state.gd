@@ -641,6 +641,7 @@ func _setup_input() -> void:
 		&"inventory": KEY_I,
 		&"sprint": KEY_SHIFT,
 		&"call_horse": KEY_X,
+		&"map": KEY_M,
 	}
 	for action: StringName in bindings:
 		if not InputMap.has_action(action):

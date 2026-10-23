@@ -16,7 +16,7 @@ extends Resource
 @export_group("Travel")
 ## Game hours a fast-travel trip takes per 100 m.
 @export var fast_travel_hours_per_100m: float = 0.5
-## Fast travel only from a campfire and only when no enemy is closer than this.
+## Fast travel (and resting) is refused while an enemy is closer than this.
 @export var fast_travel_safe_distance: float = 25.0
 
 @export_group("Enemies")

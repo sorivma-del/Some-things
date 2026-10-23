@@ -56,6 +56,7 @@ func _ready() -> void:
 	_connect_combat.call_deferred()
 	add_child(InventoryWindow.new())
 	add_child(TradeWindow.new())
+	_setup_world.call_deferred()
 
 
 func _process(_delta: float) -> void:
@@ -97,7 +98,7 @@ func _refresh_status() -> void:
 		parts.append("%s %d" % [GameState.herb_name(id), GameState.herbs.get(id, 0)])
 	parts.append("Лекарство %d" % GameState.medicine)
 	parts.append("Монеты %d" % GameState.coins)
-	_inventory_label.text = "   ·   ".join(parts) + "      I — сумка"
+	_inventory_label.text = "   ·   ".join(parts) + "      I — сумка" + ("   M — карта   X — лошадь" if GameState.world_mode else "")
 
 
 func _toast(text: String) -> void:
@@ -182,6 +183,16 @@ func _build_combat() -> void:
 	_target_bar = _bar(COLOR_HEALTH, Vector2(320, 6))
 	_target_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_target_box.add_child(_target_bar)
+
+
+## In the open world: a compass at the top and the map on M.
+func _setup_world() -> void:
+	if get_tree().get_first_node_in_group(&"open_world") == null:
+		return
+	add_child(Compass.new())
+	var map := MapWindow.new()
+	add_child(map)
+	move_child(map, get_child_count() - 1)
 
 
 func _connect_combat() -> void:

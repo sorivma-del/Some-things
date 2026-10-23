@@ -34,6 +34,7 @@ const PLACES: Dictionary[String, Dictionary] = {
 }
 
 var terrain: WorldTerrain
+var _map_texture: ImageTexture
 var _rng := RandomNumberGenerator.new()
 var _discover_timer: float = 0.0
 
@@ -100,6 +101,72 @@ func place_position(id: String) -> Vector3:
 func campfire_spot(id: String) -> Vector3:
 	var p: Vector2 = PLACES[id]["pos"]
 	return ground(p.x + 2.5, p.y + 2.5)
+
+
+## The parchment map, drawn from the terrain the first time it is needed.
+func map_texture() -> ImageTexture:
+	if _map_texture == null:
+		_map_texture = ImageTexture.create_from_image(terrain.make_map_image())
+	return _map_texture
+
+
+## Discovered places with a campfire (fast-travel destinations).
+func travel_destinations() -> PackedStringArray:
+	var result: PackedStringArray = []
+	for id: String in PLACES:
+		if PLACES[id]["fire"] and GameState.discovered.has(id):
+			result.append(id)
+	return result
+
+
+## Game hours a trip from where Mara stands to `id` takes.
+func travel_hours(id: String) -> float:
+	var player := get_tree().get_first_node_in_group(&"player") as Node3D
+	var distance := player.global_position.distance_to(place_position(id))
+	return snappedf(distance / 100.0 * CONFIG.fast_travel_hours_per_100m, 0.1)
+
+
+## Why Mara cannot travel right now ("" if she can).
+func travel_blocker() -> String:
+	if GameState.controls_locked and not get_tree().get_nodes_in_group(&"map_window").any(func(w: Node) -> bool: return w.get(&"is_open")):
+		return "Сейчас не время"
+	var player := get_tree().get_first_node_in_group(&"player") as Node3D
+	for node: Node in get_tree().get_nodes_in_group(&"enemies"):
+		var enemy := node as Enemy
+		if not enemy.dead and enemy.state != Enemy.State.CALM \
+				and enemy.global_position.distance_to(player.global_position) < CONFIG.fast_travel_safe_distance:
+			return "Рядом враги"
+	return ""
+
+
+## Fast travel to a discovered campfire: time passes by distance; the horse comes along.
+func fast_travel(id: String) -> void:
+	if not travel_blocker().is_empty() or not travel_destinations().has(id):
+		return
+	var hours := travel_hours(id)
+	var player := get_tree().get_first_node_in_group(&"player") as Node3D
+	var horse := get_tree().get_first_node_in_group(Horse.GROUP) as Horse
+	if horse and horse.is_ridden():
+		horse.dismount()
+	GameState.lock_controls()
+	await Transition.fade_out(0.6)
+	get_tree().call_group(&"world_clock", &"advance", hours)
+	var spot := campfire_spot(id)
+	player.call(&"teleport", spot + Vector3.UP * 0.3, Vector3(0, 0, 1))
+	if horse and horse.is_owned():
+		horse.global_position = spot + Vector3(3.5, 0.5, -2.0)
+		horse.velocity = Vector3.ZERO
+	get_tree().call_group(&"camera_rig", &"snap_behind_target")
+	await Transition.card(PackedStringArray([PLACES[id]["name"], "Дорога заняла %s" % _hours_text(hours)]), 1.0)
+	await Transition.fade_in(0.6)
+	GameState.unlock_controls()
+
+
+static func _hours_text(hours: float) -> String:
+	if hours < 1.0:
+		return "меньше часа"
+	var h := roundi(hours)
+	return "%d %s" % [h, "час" if h % 10 == 1 and h % 100 != 11 else "часа" if h % 10 in [2, 3, 4] and not h % 100 in [12, 13, 14] else "часов"]
 
 
 #region Ground, river, edges

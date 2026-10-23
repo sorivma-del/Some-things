@@ -107,6 +107,35 @@ func _initialize() -> void:
 	await _wait(0.3)
 	_check("no rest with enemies near", absf(float(gs.get("world_hour")) - before) < 0.1 and not gs.get("controls_locked"))
 
+	# --- Map and fast travel: only to found campfires, time passes, the horse comes along.
+	player.call(&"teleport", world.call(&"place_position", "crossroads") + Vector3(3, 0, 3))
+	await _wait(0.6)
+	var horse := get_first_node_in_group(&"horse") as Node3D
+	horse.call(&"mount")
+	horse.call(&"dismount")
+	var destinations: PackedStringArray = world.call(&"travel_destinations")
+	_check("only found campfires are destinations", destinations.has("mill") and destinations.has("crossroads") and not destinations.has("hermit"), str(destinations))
+	gs.call(&"discover", "hermit", "Хижина отшельника")
+	var map := get_first_node_in_group(&"map_window")
+	_check("map window exists in the world", map != null)
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_M
+	key.pressed = true
+	root.push_input(key)
+	await _wait(0.3)
+	_check("M opens the map", map.get(&"is_open"))
+	var depart: float = gs.get("world_hour")
+	var hours: float = world.call(&"travel_hours", "hermit")
+	map.call(&"_travel", "hermit")
+	await _wait(0.4)
+	await _wait_unlocked()
+	var hermit: Vector3 = world.call(&"place_position", "hermit")
+	_check("fast travel to the hermit", player.global_position.distance_to(hermit) < 6.0, "%.1f m away" % player.global_position.distance_to(hermit))
+	_check("the trip takes time", absf(fposmod(float(gs.get("world_hour")) - depart, 24.0) - hours) < 0.2, "%.1f h planned" % hours)
+	_check("the horse comes along", horse.global_position.distance_to(player.global_position) < 8.0)
+	_check("map closed, controls free", not map.get(&"is_open") and not gs.get("controls_locked"))
+	_check("compass on screen", world.find_children("*", "Control", true, false).any(func(c: Node) -> bool: return c.get_script() and str((c.get_script() as Script).get_global_name()) == "Compass"))
+
 	print("open world test: %d failure(s)" % failures)
 	world.queue_free()
 	await process_frame
