@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/open_world.gd" id="1_world"]
+[ext_resource type="PackedScene" path="res://scenes/environment.tscn" id="2_env"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
+[ext_resource type="Script" path="res://scripts/combat/player_combat.gd" id="4_combat"]
+[ext_resource type="PackedScene" path="res://scenes/camera_rig.tscn" id="5_rig"]
+[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="6_hud"]
+
+[node name="OpenWorld" type="Node3D"]
+script = ExtResource("1_world")
+
+[node name="Environment" parent="." instance=ExtResource("2_env")]
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 9)
+
+[node name="Combat" type="Node" parent="Player"]
+script = ExtResource("4_combat")
+
+[node name="CameraRig" parent="." node_paths=PackedStringArray("target") instance=ExtResource("5_rig")]
+target = NodePath("../Player")
+yaw_degrees = 180.0
+
+[node name="HUD" parent="." instance=ExtResource("6_hud")]

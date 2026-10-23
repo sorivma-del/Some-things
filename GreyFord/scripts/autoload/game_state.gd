@@ -20,6 +20,8 @@ signal parley_resolved(enemy_id: String, outcome: String)
 signal equipment_changed
 ## A merchant's dialogue asked for the trade window.
 signal trade_requested(merchant_id: String)
+## A place in the open world was found for the first time.
+signal place_discovered(id: String, display_name: String)
 
 enum Phase { DAY, NIGHT }
 
@@ -57,6 +59,10 @@ var coins: int = 0:
 ## Where Mara comes back after falling in a fight (the last campfire she rested at).
 var respawn_point: Vector3 = Vector3.ZERO
 var has_respawn_point: bool = false
+## In the open world ("Земли за Бродом") rather than the village.
+var world_mode: bool = false
+## Open-world places found so far: id -> true.
+var discovered: Dictionary[String, bool] = {}
 ## Mara's health between scenes and in saves (PlayerCombat keeps it in step); <0 = full.
 var hero_health: float = -1.0
 ## Mara's bag apart from herbs and the remedy (item id -> count). See count()/give()/take().
@@ -429,6 +435,19 @@ func sell(merchant_id: String, id: String) -> bool:
 #endregion
 
 
+#region Open world
+
+func discover(id: String, display_name: String) -> void:
+	if discovered.has(id):
+		return
+	discovered[id] = true
+	set_flag("found_%s" % id)
+	place_discovered.emit(id, display_name)
+	notified.emit("Найдено место: %s" % display_name)
+
+#endregion
+
+
 #region Parley
 
 ## Dialogue helpers for a bandit that stopped Mara (see dialogues/bandit.dialogue).
@@ -494,6 +513,8 @@ func new_game() -> void:
 	coins = config.start_coins
 	has_respawn_point = false
 	hero_health = -1.0
+	world_mode = false
+	discovered.clear()
 	items.clear()
 	for id: String in config.start_items:
 		items[id] = config.start_items[id]

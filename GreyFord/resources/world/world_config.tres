@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="WorldConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/world_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+seconds_per_hour = 50.0
+start_hour = 8.0
+morning_hour = 6.0
+day_hour = 10.0
+evening_hour = 18.0
+night_hour = 21.0
+wake_hour = 7.0
+fast_travel_hours_per_100m = 0.5
+fast_travel_safe_distance = 25.0
+respawn_days = 2
+wolves_per_pack = 3
+bandits_at_camp = 2
+bandits_at_tower = 2
+infected_at_graveyard = 3
+infected_at_farm = 2
+deer_herds = 3
+deer_per_herd = 3
+fog_scale = 0.55
+draw_distance = 170.0
