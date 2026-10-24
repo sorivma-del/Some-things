@@ -9,7 +9,7 @@ signal defeated
 
 ## Physics layer 2, shared with the watchmen: the camera's spring arm ignores it.
 const BODY_LAYER := 1 << 1
-const FLASH_COLOR := Color(1.0, 0.25, 0.15)
+const FLASH_COLOR := Color(0.95, 0.7, 0.42)
 
 @export var data: EnemyData
 ## Shown on the HUD when Mara locks on (defaults to data.display_name).
@@ -116,7 +116,7 @@ func _stood_up() -> void:
 
 func _flash_once() -> void:
 	var tween := create_tween()
-	tween.tween_property(_flash, ^"albedo_color", overlay_base, 0.18).from(Color(FLASH_COLOR, 0.65))
+	tween.tween_property(_flash, ^"albedo_color", overlay_base, 0.12).from(Color(FLASH_COLOR, 0.22))
 
 
 func _damage_number(amount: float) -> void:

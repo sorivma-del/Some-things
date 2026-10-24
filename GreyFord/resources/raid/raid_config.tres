@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RaidConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/raid/raid_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+warning_seconds = 6.0
+breather_seconds = 4.0
+first_wave_count = 2
+escort_count = 1
+raider_health = 60.0
+chief_health = 150.0
+sight_radius = 40.0
+leash_distance = 75.0
+breather_heal = 35.0
+civilian_speed = 2.8
+ignition_flight_seconds = 1.1
+fire_energy = 3.0

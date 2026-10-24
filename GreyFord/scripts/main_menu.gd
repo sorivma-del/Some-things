@@ -43,6 +43,7 @@ func _ready() -> void:
 	_continue.disabled = not GameState.has_save()
 	column.add_child(_continue)
 	column.add_child(_button("Земли за Бродом", _on_world))
+	column.add_child(_button("Набег на Серый Брод", _on_raid))
 	column.add_child(_button("Арена (бой)", _on_arena))
 	column.add_child(_button("Выход", func() -> void: get_tree().quit()))
 	Transition.fade_in(0.8)
@@ -86,3 +87,10 @@ func _label(text: String, size: int, weight: int, italic: bool, color: Color, sp
 
 func _button(text: String, action: Callable) -> Button:
 	return UiStyle.button(text, action)
+
+
+func _on_raid() -> void:
+	GameState.new_game()
+	GameState.play_intro = false
+	await Transition.fade_out(0.8)
+	get_tree().change_scene_to_file("res://scenes/raid/village_raid.tscn")

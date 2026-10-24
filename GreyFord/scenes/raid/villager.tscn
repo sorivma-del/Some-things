@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/raid/raid_civilian.gd" id="1_npc"]
+[ext_resource type="Script" path="res://scripts/character_model.gd" id="2_model"]
+[ext_resource type="PackedScene" path="res://resources/models/characters/base/Superhero_Male_FullBody.gltf" id="5_body"]
+[ext_resource type="PackedScene" path="res://resources/models/characters/outfits/Male_Ranger.gltf" id="6_outfit"]
+[ext_resource type="PackedScene" path="res://resources/models/characters/hair/Hair_Beard.gltf" id="7_hair"]
+
+
+[sub_resource type="CapsuleShape3D" id="shape"]
+radius = 0.35
+height = 1.75
+
+[sub_resource type="SphereShape3D" id="reach"]
+radius = 1.5
+
+[node name="Villager" type="CharacterBody3D"]
+script = ExtResource("1_npc")
+collision_layer = 0
+collision_mask = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.88, 0)
+shape = SubResource("shape")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("2_model")
+base_scene = ExtResource("5_body")
+parts = Array[PackedScene]([ExtResource("6_outfit"), ExtResource("7_hair")])
+head_only_parts = PackedStringArray("Superhero_Male")
+tint = Color(0.62, 0.6, 0.6, 1)
+default_animation = &"Idle"
