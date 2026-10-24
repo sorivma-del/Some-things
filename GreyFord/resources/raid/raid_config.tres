@@ -82,3 +82,4 @@ combo_cost = PackedFloat32Array(1.0, 1.0, 1.5)
 role_profiles = Array[ExtResource("role")]([SubResource("duelist"), SubResource("shield"), SubResource("brute"), SubResource("chief")])
 guard_front_dot = 0.3
 combo_strike_fraction = 0.45
+street_upgrade = true

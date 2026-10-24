@@ -31,7 +31,7 @@ script = ExtResource("14_combat")
 [node name="CameraRig" parent="." node_paths=PackedStringArray("target") instance=ExtResource("6_rig")]
 target = NodePath("../Player")
 yaw_degrees = 180.0
-distance = 6.0
-pitch_degrees = -22.0
+distance = 5.4
+pitch_degrees = -18.0
 
 [node name="HUD" parent="." instance=ExtResource("7_hud")]

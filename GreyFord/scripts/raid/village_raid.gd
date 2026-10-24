@@ -33,6 +33,8 @@ func _ready() -> void:
 	GameState.world_mode = false
 	_build_overlay()
 	_build_damage()
+	if CONFIG.street_upgrade:
+		GateStreetLook.apply($Village)
 	_disable_story_interactions()
 	_hero.died.connect(_on_hero_died)
 	$Environment.call(&"set_world_look", LOOK)

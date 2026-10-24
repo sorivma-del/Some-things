@@ -40,6 +40,7 @@ func _run() -> void:
 	var hero := raid.get_node(^"Player/Combat")
 	hero.set(&"invulnerable", true)
 	await _wait(0.3)
+	_test_street(raid)
 	_check("Вступление блокирует управление", gs.get(&"controls_locked"))
 	raid.call(&"start_attack")
 	await _wait(0.2)
@@ -169,3 +170,13 @@ func _test_combat(raid: Node3D) -> void:
 	hero.call(&"restore")
 	for enemy: Node in opponents:
 		enemy.set_physics_process(true)
+
+
+func _test_street(raid: Node3D) -> void:
+	var cottages := raid.find_children("WeatheredCottage", "", true, false)
+	_check("Два дома у ворот получили новые материалы", cottages.size() == 2)
+	var colliders_preserved: bool = true
+	for cottage: Node in cottages:
+		colliders_preserved = colliders_preserved and not cottage.get_parent().find_children("*", "CollisionShape3D", true, false).is_empty()
+	_check("Новый вид домов сохраняет препятствия для игрока", colliders_preserved)
+	_check("У ворот заменены четыре хвойных дерева", raid.find_children("DetailedFir", "", true, false).size() == 4)

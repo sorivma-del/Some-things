@@ -33,3 +33,5 @@ extends Resource
 @export var role_profiles: Array[RaidRole] = []
 @export var guard_front_dot: float = 0.3
 @export var combo_strike_fraction: float = 0.45
+
+@export var street_upgrade: bool = true
