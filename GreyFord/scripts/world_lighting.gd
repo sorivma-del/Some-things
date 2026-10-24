@@ -14,6 +14,7 @@ const PRESETS: Dictionary[String, Array] = {
 
 ## Multiplier on fog density (the open world is less closed in than the village).
 var fog_scale: float = 1.0
+var _world_look: WorldConfig
 
 @onready var _env: Environment = ($WorldEnvironment as WorldEnvironment).environment
 @onready var _moon: DirectionalLight3D = $Moonlight
@@ -31,6 +32,30 @@ func set_fog_scale(value: float) -> void:
 	_apply(_preset_name(), 0.0)
 
 
+## Собственная копия окружения не меняет вид деревни при возвращении из мира.
+func set_world_look(config: WorldConfig) -> void:
+	_world_look = config
+	_env = _env.duplicate() as Environment
+	($WorldEnvironment as WorldEnvironment).environment = _env
+	_env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
+	_env.fog_height_density = config.ground_mist
+	_env.fog_sky_affect = 0.7
+	_env.ambient_light_color = config.ambient_color
+	_env.adjustment_saturation = config.saturation
+	_env.tonemap_exposure = config.exposure
+	_env.glow_intensity = 0.3
+	_env.glow_bloom = 0.02
+	_env.glow_hdr_threshold = 1.4
+	_env.sky = _env.sky.duplicate() as Sky
+	var sky := _env.sky.sky_material.duplicate() as ProceduralSkyMaterial
+	_env.sky.sky_material = sky
+	sky.sky_top_color = config.sky_zenith
+	sky.sky_horizon_color = config.sky_horizon
+	sky.ground_horizon_color = config.sky_horizon
+	sky.ground_bottom_color = config.sky_ground
+	_apply(_preset_name(), 0.0)
+
+
 func _preset_name() -> String:
 	if GameState.world_mode:
 		return GameState.world_period()
@@ -40,7 +65,7 @@ func _preset_name() -> String:
 
 
 func _apply(preset: String, duration: float) -> void:
-	var p: Array = PRESETS[preset]
+	var p: Array = _world_look.light_presets.get(preset, PRESETS[preset]) if _world_look else PRESETS[preset]
 	if duration <= 0.0:
 		_moon.light_energy = p[0]
 		_moon.light_color = p[1]

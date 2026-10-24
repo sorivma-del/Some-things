@@ -25,7 +25,9 @@ func _run() -> void:
 	await process_frame
 	gs = root.get_node(^"GameState")
 	_test_terrain()
+	_test_lighting_isolation()
 	_test_resident()
+	_test_head_surface()
 	_test_freed_encounter()
 	await _test_activity()
 	print("world_performance test: %d failure(s)" % failures)
@@ -131,3 +133,48 @@ func _test_freed_encounter() -> void:
 	enemy.free()
 	_check("Удалённый враг не ломает список живых", (encounters.call(&"_alive", "old") as Array).is_empty())
 	encounters.free()
+
+
+func _test_lighting_isolation() -> void:
+	var mode: bool = gs.get(&"world_mode")
+	gs.set(&"world_mode", true)
+	var scene := load("res://scenes/environment.tscn") as PackedScene
+	var village := scene.instantiate() as Node3D
+	var world := scene.instantiate() as Node3D
+	root.add_child(village)
+	root.add_child(world)
+	var original := (village.get_node(^"WorldEnvironment") as WorldEnvironment).environment
+	var fog_mode := original.fog_mode
+	var fog_color := original.fog_light_color
+	var sky_material := original.sky.sky_material
+	world.call(&"set_world_look", CONFIG)
+	var styled := (world.get_node(^"WorldEnvironment") as WorldEnvironment).environment
+	world.call(&"_apply", "night", 0.0)
+	_check("Свет открытого мира не меняет общее окружение деревни", styled != original and original.fog_mode == fog_mode and original.fog_light_color == fog_color)
+	_check("Небо открытого мира имеет собственный материал", styled.sky.sky_material != sky_material)
+	_check("Ночью освещение двора следует выбранному оформлению", is_equal_approx(styled.ambient_light_energy, float(CONFIG.light_presets["night"][3])))
+	world.free()
+	village.free()
+	gs.set(&"world_mode", mode)
+
+
+func _test_head_surface() -> void:
+	var model: Node = (load("res://scripts/character_model.gd") as GDScript).new()
+	var mesh := ArrayMesh.new()
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = PackedVector3Array([Vector3.ZERO, Vector3.RIGHT, Vector3.UP])
+	arrays[Mesh.ARRAY_BONES] = PackedInt32Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+	arrays[Mesh.ARRAY_WEIGHTS] = PackedFloat32Array([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0])
+	arrays[Mesh.ARRAY_INDEX] = PackedInt32Array([0, 1, 2])
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	var skin := Skin.new()
+	skin.add_bind(0, Transform3D.IDENTITY)
+	skin.set_bind_name(0, &"spine_01")
+	instance.skin = skin
+	model.call(&"_strip_to_head", instance)
+	_check("Отсечённое тело не возвращается в виде случайных треугольников", instance.mesh.get_surface_count() == 0)
+	instance.free()
+	model.free()

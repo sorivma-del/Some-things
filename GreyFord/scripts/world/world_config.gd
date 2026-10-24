@@ -44,3 +44,28 @@ extends Resource
 @export var fog_scale: float = 0.55
 ## Trees and rocks further than this are not drawn (fog hides the edge).
 @export var draw_distance: float = 170.0
+
+
+@export_group("Освещение открытого мира")
+@export var light_presets: Dictionary[String, Array] = {}
+@export var ground_mist: float = 0.012
+@export var ambient_color: Color = Color(0.52, 0.61, 0.72)
+@export var sky_zenith: Color = Color(0.09, 0.14, 0.21)
+@export var sky_horizon: Color = Color(0.38, 0.43, 0.47)
+@export var sky_ground: Color = Color(0.16, 0.19, 0.21)
+@export var saturation: float = 0.68
+@export var exposure: float = 1.0
+
+@export_group("Двор мельницы")
+@export var yard_center: Vector2 = Vector2(-55, 196)
+@export var yard_door: Vector2 = Vector2(-57.5, 194)
+@export var yard_radius: float = 28.0
+@export var foliage_spacing: float = 0.9
+@export var foliage_density: float = 0.62
+@export var foliage_draw_distance: float = 55.0
+@export var foliage_tint: Color = Color(0.62, 0.59, 0.48)
+@export var foliage_saturation: float = 0.22
+@export var wind_strength: float = 0.09
+@export var wind_speed: float = 1.3
+
+@export var ground_normal_strength: float = 0.45

@@ -122,6 +122,9 @@ func _strip_to_head(mesh_instance: MeshInstance3D) -> void:
 		for t: int in range(0, indices.size(), 3):
 			if keep_vertex[indices[t]] and keep_vertex[indices[t + 1]] and keep_vertex[indices[t + 2]]:
 				kept.append_array([indices[t], indices[t + 1], indices[t + 2]])
+		# Пустой индексный массив рисуется как неиндексированные треугольники.
+		if kept.is_empty():
+			continue
 		arrays[Mesh.ARRAY_INDEX] = kept
 		# Custom channels would need their format flags re-declared; the head does not use them.
 		for channel: int in [Mesh.ARRAY_CUSTOM0, Mesh.ARRAY_CUSTOM1, Mesh.ARRAY_CUSTOM2, Mesh.ARRAY_CUSTOM3]:

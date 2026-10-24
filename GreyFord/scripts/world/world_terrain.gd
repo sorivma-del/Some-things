@@ -220,7 +220,7 @@ func _build_chunk(parent: Node3D, material: ShaderMaterial, x0: int, z0: int, x1
 			var x := -HALF_WIDTH + xi * STEP
 			var z := Z_MIN + zi * STEP
 			var wet := _heights[i] < WATER_LEVEL - 0.2
-			st.set_color(Color(1.0 if wet else _mud(x, z, i), forest_weight(x, z), 0.0))
+			st.set_color(Color(1.0 if wet else _mud(x, z, i), forest_weight(x, z), 1.0 - smoothstep(1.2, 3.5, _road[i])))
 			st.set_uv(Vector2(x, z))
 			st.set_normal(_normal_at(xi, zi))
 			st.add_vertex(Vector3(x, _heights[i], z))
@@ -300,6 +300,11 @@ func _build_water() -> void:
 func _make_material() -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = SHADER
+	mat.set_shader_parameter("normal_strength", CONFIG.ground_normal_strength)
+	mat.set_shader_parameter("yard_enabled", true)
+	mat.set_shader_parameter("yard_center", CONFIG.yard_center)
+	mat.set_shader_parameter("yard_door", CONFIG.yard_door)
+	mat.set_shader_parameter("yard_radius", CONFIG.yard_radius)
 	for layer: String in ["mud", "grass", "forest"]:
 		var file: String = {"mud": "brown_mud_03", "grass": "sparse_grass", "forest": "mud_forest"}[layer]
 		mat.set_shader_parameter(layer + "_albedo", load(TEX + file + "_diff.jpg"))

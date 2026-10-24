@@ -61,6 +61,7 @@ func _ready() -> void:
 	add_child(encounters)
 	add_child(WorldActivity.new())
 	get_tree().call_group(&"world_lighting", &"set_fog_scale", CONFIG.fog_scale)
+	get_tree().call_group(&"world_lighting", &"set_world_look", CONFIG)
 	_arrive.call_deferred()
 	_hang_lantern.call_deferred()
 
@@ -403,6 +404,10 @@ func _build_mill() -> void:
 	var miller := MILLER.instantiate() as WorldResident
 	miller.position = ground(miller.data.home.x, miller.data.home.y) + Vector3.UP * 0.2
 	add_child(miller)
+	var dressing := MillDressing.new()
+	dressing.terrain = terrain
+	dressing.position = ground(c.x, c.y)
+	add_child(dressing)
 
 
 ## A ruined square watchtower, 2 x 2 modules: three storeys of bare brick, no roof.
