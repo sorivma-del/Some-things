@@ -319,7 +319,7 @@ func _on_hit(info: HitInfo) -> void:
 	if state == State.DEAD or is_invulnerable():
 		info.result = HitInfo.Result.IGNORED
 		return
-	if blocking and state == State.NORMAL and _forward().dot(-info.direction) >= cos(deg_to_rad(data.block_angle_degrees)):
+	if not info.unblockable and blocking and state == State.NORMAL and _forward().dot(-info.direction) >= cos(deg_to_rad(data.block_angle_degrees)):
 		var cost := data.block_hit_cost * info.damage / 10.0 * _block_cost_factor()
 		if stamina >= cost:
 			_spend(cost)

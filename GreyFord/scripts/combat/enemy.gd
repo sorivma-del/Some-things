@@ -407,7 +407,7 @@ func _update_attack(delta: float) -> Vector3:
 				_telegraph(0.0)
 				_attack_phase = AttackPhase.ACTIVE
 				_state_time = 0.0
-				_hitbox.begin_swing(attack.damage, attack.knockback)
+				_hitbox.begin_swing(attack.damage, attack.knockback, -1.0, false, false, attack.unblockable)
 		AttackPhase.ACTIVE:
 			if _state_time >= attack.active:
 				_hitbox.end_swing()

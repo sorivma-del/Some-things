@@ -22,7 +22,6 @@ extends Resource
 @export var parry_window: float = 0.2
 @export var parry_cost: float = 8.0
 @export var parry_stagger: float = 1.1
-@export var guard_hits: int = 2
 @export var guard_break_damage: float = 28.0
 @export var combo_windups: PackedFloat32Array = PackedFloat32Array([0.2, 0.23, 0.34])
 @export var combo_active: PackedFloat32Array = PackedFloat32Array([0.14, 0.15, 0.18])
@@ -35,3 +34,22 @@ extends Resource
 @export var combo_strike_fraction: float = 0.45
 
 @export var street_upgrade: bool = true
+
+@export_group("Стойкость и контратака")
+@export var heavy_windup: float
+@export var heavy_active: float
+@export var heavy_recovery: float
+@export var heavy_damage: float
+@export var heavy_cost: float
+@export var heavy_posture: float
+@export var light_posture: float
+@export var posture_regen: float
+@export var posture_delay: float
+@export var exposed_seconds: float
+@export var counter_window: float
+@export var counter_range: float
+@export var counter_windup: float
+@export var counter_active: float
+@export var counter_recovery: float
+@export var counter_damage: float
+@export var counter_cost: float

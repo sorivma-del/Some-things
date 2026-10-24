@@ -15,6 +15,7 @@ poise = 12.0
 attack_clip = &"Sword_Regular_B"
 windup = 0.42
 damage = 12.0
+max_posture = 40.0
 
 [sub_resource type="Resource" id="shield"]
 script = ExtResource("role")
@@ -27,6 +28,7 @@ poise = 30.0
 attack_clip = &"Sword_Attack"
 windup = 0.55
 damage = 15.0
+max_posture = 60.0
 
 [sub_resource type="Resource" id="brute"]
 script = ExtResource("role")
@@ -39,6 +41,8 @@ poise = 35.0
 attack_clip = &"Sword_Regular_C"
 windup = 0.72
 damage = 23.0
+max_posture = 80.0
+unblockable = true
 
 [sub_resource type="Resource" id="chief"]
 script = ExtResource("role")
@@ -51,6 +55,7 @@ poise = 40.0
 attack_clip = &"Sword_Attack"
 windup = 0.6
 damage = 22.0
+max_posture = 100.0
 
 [resource]
 script = ExtResource("1")
@@ -72,7 +77,6 @@ attack_turn_delay = 0.35
 parry_window = 0.2
 parry_cost = 8.0
 parry_stagger = 1.1
-guard_hits = 2
 guard_break_damage = 28.0
 combo_windups = PackedFloat32Array(0.2, 0.23, 0.34)
 combo_active = PackedFloat32Array(0.14, 0.15, 0.18)
@@ -83,3 +87,20 @@ role_profiles = Array[ExtResource("role")]([SubResource("duelist"), SubResource(
 guard_front_dot = 0.3
 combo_strike_fraction = 0.45
 street_upgrade = true
+heavy_windup = 0.43
+heavy_active = 0.18
+heavy_recovery = 0.58
+heavy_damage = 2.1
+heavy_cost = 1.7
+heavy_posture = 42.0
+light_posture = 12.0
+posture_regen = 14.0
+posture_delay = 2.0
+exposed_seconds = 1.4
+counter_window = 1.1
+counter_range = 2.0
+counter_windup = 0.13
+counter_active = 0.12
+counter_recovery = 0.42
+counter_damage = 1.8
+counter_cost = 0.75

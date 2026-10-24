@@ -672,6 +672,7 @@ func _setup_input() -> void:
 		&"move_right": KEY_D,
 		&"interact": KEY_E,
 		&"attack": KEY_J,
+		&"heavy_attack": KEY_K,
 		&"block": KEY_SHIFT,
 		&"roll": KEY_SPACE,
 		&"lock_on": KEY_Q,

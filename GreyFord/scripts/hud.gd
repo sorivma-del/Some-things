@@ -31,6 +31,8 @@ var _stamina_bar: ProgressBar
 var _coins_label: Label
 var _target_box: VBoxContainer
 var _target_name: Label
+var _target_posture: ProgressBar
+var _target_hint: Label
 var _target_bar: ProgressBar
 var _target: Node3D
 
@@ -68,6 +70,9 @@ func _process(_delta: float) -> void:
 		_stamina_bar.value = float(horse.get(&"stamina")) / float((horse.get(&"data") as Resource).get(&"max_stamina")) * 100.0
 	if is_instance_valid(_target):
 		_target_bar.value = float(_target.call(&"health_ratio")) * 100.0
+		if _target.has_method(&"posture_ratio"):
+			_target_posture.value = float(_target.call(&"posture_ratio")) * 100.0
+			_target_hint.text = str(_target.call(&"combat_hint"))
 
 
 ## Text under the day line, e.g. the night's goal. Empty hides it.
@@ -183,6 +188,17 @@ func _build_combat() -> void:
 	_target_bar = _bar(COLOR_HEALTH, Vector2(320, 6))
 	_target_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_target_box.add_child(_target_bar)
+	_target_posture = _bar(COLOR_STAMINA, Vector2(260, 5))
+	_target_posture.name = "PostureBar"
+	_target_posture.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_target_posture.visible = false
+	_target_box.add_child(_target_posture)
+	_target_hint = Label.new()
+	_target_hint.name = "CombatHint"
+	_target_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UiStyle.apply_label(_target_hint, 14, 600, false, UiStyle.COLOR_ACCENT, 2)
+	_target_hint.visible = false
+	_target_box.add_child(_target_hint)
 
 
 ## In the open world: a compass at the top and the map on M.
@@ -215,6 +231,9 @@ func _on_coins_changed(coins: int) -> void:
 
 func _on_target_changed(node: Node3D) -> void:
 	_target = node
+	var has_posture := node != null and node.has_method(&"posture_ratio")
+	_target_posture.visible = has_posture
+	_target_hint.visible = has_posture
 	if node:
 		_target_name.text = str(node.get(&"lock_name")).to_upper()
 		_target_bar.value = float(node.call(&"health_ratio")) * 100.0

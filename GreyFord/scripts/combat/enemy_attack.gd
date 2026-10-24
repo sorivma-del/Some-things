@@ -25,3 +25,5 @@ extends Resource
 @export var hop_back_speed: float = 0.0
 ## Relative chance among the attacks in range.
 @export var weight: float = 1.0
+
+@export var unblockable: bool = false

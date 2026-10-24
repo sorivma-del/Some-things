@@ -11,3 +11,6 @@ extends Resource
 @export var damage: float = 16.0
 
 @export var display_name: String = "Налётчик"
+
+@export var max_posture: float
+@export var unblockable: bool = false

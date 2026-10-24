@@ -144,7 +144,7 @@ func _test_combat(raid: Node3D) -> void:
 	_check("Своевременный блок парирует без потери здоровья", int(hit.result) == 2 and is_equal_approx(float(hero.get(&"health")), health))
 	_check("Парирование открывает противника для ответа", int(opponents[0].get(&"state")) == 5)
 	await _wait(CONFIG.parry_window + 0.2)
-	var late := HIT_INFO.new(12.0, 0.0, opponents[0], -forward)
+	var late := HIT_INFO.new(12.0, 0.0, opponents[0], -(hero.call(&"_forward") as Vector3))
 	(hero.get(&"_hurtbox") as Node).call(&"receive", late)
 	_check("Удержание блока после окна не создаёт новое парирование", int(late.result) == 2 and float(hero.get(&"_parry_left")) <= 0.0)
 	Input.action_release(&"block")
@@ -158,6 +158,7 @@ func _test_combat(raid: Node3D) -> void:
 	_check("Лимит одновременных атак соблюдается", not raid.call(&"may_attack", opponents[CONFIG.max_attackers]))
 	for enemy: Node in opponents:
 		enemy.call(&"_set_state", 2)
+	_check("Рубака использует неблокируемый удар, налётчик — обычный", bool((opponents[2].get(&"attack") as Resource).get(&"unblockable")) and not bool((opponents[0].get(&"attack") as Resource).get(&"unblockable")))
 	var shield: Node = opponents[1]
 	var before: float = shield.get(&"health")
 	var normal := HIT_INFO.new(20.0, 0.0, raid.get_node(^"Player"), -(shield.call(&"_forward") as Vector3))
@@ -166,6 +167,7 @@ func _test_combat(raid: Node3D) -> void:
 	var heavy := HIT_INFO.new(CONFIG.guard_break_damage + 1.0, 0.0, raid.get_node(^"Player"), -(shield.call(&"_forward") as Vector3))
 	(shield.get(&"_hurtbox") as Node).call(&"receive", heavy)
 	_check("Тяжёлый удар пробивает прикрытие щитоносца", int(heavy.result) == 1 and float(shield.get(&"health")) < before)
+	await _test_detailed_combat(raid, hero)
 	hero.set(&"invulnerable", true)
 	hero.call(&"restore")
 	for enemy: Node in opponents:
@@ -180,3 +182,97 @@ func _test_street(raid: Node3D) -> void:
 		colliders_preserved = colliders_preserved and not cottage.get_parent().find_children("*", "CollisionShape3D", true, false).is_empty()
 	_check("Новый вид домов сохраняет препятствия для игрока", colliders_preserved)
 	_check("У ворот заменены четыре хвойных дерева", raid.find_children("DetailedFir", "", true, false).size() == 4)
+
+
+func _test_detailed_combat(raid: Node3D, hero: Node) -> void:
+	var dummy: Variant = (load("res://scenes/raid/raider.tscn") as PackedScene).instantiate()
+	dummy.data = dummy.data.duplicate(true) as EnemyData
+	dummy.role = 1
+	raid.add_child(dummy)
+	dummy.set_physics_process(false)
+	var body := hero.get_parent() as Node3D
+	var forward: Vector3 = hero.call(&"_forward")
+	dummy.global_position = body.global_position + forward * 1.25
+	dummy.get_node(^"Model").look_at(body.global_position)
+	dummy.call(&"_set_state", 2)
+	hero.call(&"_set_state", 0)
+	hero.call(&"restore")
+	var base_damage: float = (gs.call(&"equipped", "weapon") as Resource).get(&"damage")
+	var hits: Array[HitInfo] = []
+	dummy.get(&"_hurtbox").hit.connect(func(info: HitInfo) -> void: hits.append(info))
+	await physics_frame
+	await physics_frame
+	Input.action_press(&"heavy_attack")
+	await _wait(0.05)
+	Input.action_release(&"heavy_attack")
+	_check("Отдельная кнопка запускает тяжёлый удар", int(hero.get(&"state")) == 1 and is_equal_approx(float(hero.call(&"attack_damage")), base_damage * CONFIG.heavy_damage))
+	await _wait(CONFIG.heavy_windup + CONFIG.heavy_active + CONFIG.heavy_recovery + 0.2)
+	_check("Настоящий хитбокс тяжёлого удара проходит сквозь защиту щита", not hits.is_empty() and hits[0].breaks_guard and hits[0].result == HitInfo.Result.HIT and dummy.health < dummy.data.max_health)
+	_check("Тяжёлый удар накапливает стойкость", dummy.posture > 0.0)
+	dummy.health = dummy.data.max_health
+	dummy.posture = 0.0
+	dummy.call(&"_set_state", 2)
+	for i: int in 3:
+		var pressure := HIT_INFO.new(1.0, 0.0, body, -(dummy.call(&"_forward") as Vector3))
+		pressure.guard_damage = dummy.max_posture / 3.0
+		dummy.get(&"_hurtbox").receive(pressure)
+	_check("Давление ломает стойкость без урона через щит", dummy.is_exposed() and dummy.state == 5 and is_equal_approx(dummy.health, dummy.data.max_health))
+	var neighbor: Variant = (load("res://scenes/raid/raider.tscn") as PackedScene).instantiate()
+	neighbor.data = neighbor.data.duplicate(true) as EnemyData
+	raid.add_child(neighbor)
+	neighbor.set_physics_process(false)
+	neighbor.global_position = dummy.global_position + body.global_basis.x * 0.55
+	var neighbor_health: float = neighbor.health
+	hero.call(&"_set_state", 0)
+	hero.call(&"restore")
+	Input.action_press(&"block")
+	await _wait(0.05)
+	var parry := HIT_INFO.new(12.0, 0.0, dummy, -forward)
+	hero.get(&"_hurtbox").receive(parry)
+	Input.action_release(&"block")
+	await _wait(0.03)
+	hits.clear()
+	Input.action_press(&"attack")
+	await _wait(0.05)
+	Input.action_release(&"attack")
+	_check("После парирования обычный удар становится контратакой", hero.get(&"target") == dummy and float(hero.call(&"attack_damage")) > base_damage)
+	await _wait(CONFIG.counter_windup + CONFIG.counter_active + 0.1)
+	_check("Контратака доходит до врага и расходует открытие", not hits.is_empty() and hits[0].is_counter and not dummy.is_exposed())
+	_check("Контратака не задевает соседнего противника", is_equal_approx(neighbor.health, neighbor_health))
+	hero.call(&"_set_state", 0)
+	hero.call(&"_start_attack", 0)
+	_check("Повторный удар не получает бонус контратаки", is_equal_approx(float(hero.call(&"attack_damage")), base_damage))
+	hero.call(&"_set_state", 0)
+	hero.set(&"stamina", 0.0)
+	hero.call(&"_start_heavy")
+	_check("Без выносливости тяжёлый удар не запускается", int(hero.get(&"state")) == 0)
+	hero.call(&"restore")
+	Input.action_press(&"block")
+	await _wait(0.05)
+	hero.get(&"_hurtbox").receive(HIT_INFO.new(12.0, 0.0, dummy, -forward))
+	Input.action_release(&"block")
+	await _wait(CONFIG.counter_window + 0.1)
+	hero.call(&"_start_attack", 0)
+	_check("Истёкшее окно парирования не даёт контратаку", is_equal_approx(float(hero.call(&"attack_damage")), base_damage))
+	hero.call(&"_set_state", 0)
+	hero.call(&"restore")
+	Input.action_press(&"block")
+	await _wait(0.05)
+	var health: float = hero.get(&"health")
+	var crush := HIT_INFO.new(12.0, 0.0, dummy, -forward)
+	crush.unblockable = true
+	hero.get(&"_hurtbox").receive(crush)
+	_check("Неблокируемый удар нельзя остановить парированием", crush.result == HitInfo.Result.HIT and float(hero.get(&"health")) < health)
+	Input.action_release(&"block")
+	hero.call(&"_set_state", 0)
+	hero.call(&"restore")
+	hero.call(&"_start_roll", forward)
+	hero.set(&"_state_time", 0.1)
+	var dodge := HIT_INFO.new(12.0, 0.0, dummy, -forward)
+	dodge.unblockable = true
+	hero.get(&"_hurtbox").receive(dodge)
+	_check("Перекат спасает от неблокируемого удара", dodge.result == HitInfo.Result.IGNORED)
+	hero.call(&"_set_state", 0)
+	hero.call(&"_set_target", null)
+	dummy.free()
+	neighbor.free()

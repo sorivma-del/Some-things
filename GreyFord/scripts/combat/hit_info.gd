@@ -5,6 +5,12 @@ extends RefCounted
 
 enum Result { IGNORED, HIT, BLOCKED, KILLED }
 
+## Отрицательное значение оставляет обычное давление стойкости у получателя.
+var guard_damage: float = -1.0
+var breaks_guard: bool = false
+var is_counter: bool = false
+var unblockable: bool = false
+
 var damage: float
 var knockback: float
 var source: Node3D

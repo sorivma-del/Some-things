@@ -88,7 +88,7 @@ func start_attack() -> void:
 	$CameraRig.call(&"make_current")
 	_unlock()
 	_set_phase(Phase.FIRST_WAVE)
-	_objective("Удержите улицу у ворот", "ЛКМ / J — комбо · Shift перед ударом — парирование · пробел — перекат · Q — цель · H — перевязка")
+	_objective("Удержите улицу у ворот", "ЛКМ / J — удар · K — тяжёлый · Shift — блок / парирование · пробел — перекат · Q — цель")
 	if alive_count() == 0:
 		_spawn_wave(CONFIG.first_wave_count, false)
 	else:
