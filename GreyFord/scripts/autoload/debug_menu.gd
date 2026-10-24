@@ -102,6 +102,12 @@ func _refresh() -> void:
 	if not _panel.visible:
 		return
 	var lines: PackedStringArray = []
+	lines.append("Кадры %d/с · память движка %.0f МБ · отрисовки %d" % [Engine.get_frames_per_second(),
+			Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0,
+			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
+	var activity := get_tree().get_first_node_in_group(&"world_activity") as WorldActivity
+	if activity:
+		lines.append("Дальних персонажей на паузе: %d" % activity.sleeping_count())
 	var phase := "ночь" if GameState.phase == GameState.Phase.NIGHT else "день"
 	if GameState.world_mode:
 		var horse := get_tree().get_first_node_in_group(&"horse")

@@ -31,6 +31,14 @@ extends Resource
 @export var deer_herds: int = 3
 @export var deer_per_herd: int = 3
 
+@export_group("Performance")
+## Размер участка земли в ячейках: невидимые участки отсекаются отдельно.
+@export var terrain_chunk_cells: int = 32
+## Спокойные персонажи вдали от Мары приостанавливают физику и анимации.
+@export var actor_sleep_distance: float = 110.0
+@export var actor_wake_distance: float = 90.0
+@export var activity_interval: float = 0.25
+
 @export_group("Look")
 ## Multiplier on fog density in the open world (the village keeps its own).
 @export var fog_scale: float = 0.55

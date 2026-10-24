@@ -92,11 +92,11 @@ func _initialize() -> void:
 	_check("resting sleeps till morning", int(gs.get("world_day")) == day + 1 and absf(float(gs.get("world_hour")) - 7.0) < 0.2, "day %d, %s" % [gs.get("world_day"), gs.call(&"world_clock_text")])
 	_check("resting heals", float(combat.get(&"health")) >= 80.0, "%.0f" % combat.get(&"health"))
 	_check("graveyard dead gone by morning", not _groups().has("graveyard"))
-	_check("tower still empty a day later", (_groups().get("tower", []) as Array).filter(func(e: Node) -> bool: return is_instance_valid(e)).is_empty())
+	_check("tower still empty a day later", (_groups().get("tower", []) as Array).filter(func(e: Variant) -> bool: return is_instance_valid(e)).is_empty())
 	_clock().call(&"advance", 24.0)
 	gs.emit_signal(&"time_changed")
 	await _wait(0.3)
-	var tower: Array = (_groups().get("tower", []) as Array).filter(func(e: Node) -> bool: return is_instance_valid(e) and not e.get(&"dead"))
+	var tower: Array = (_groups().get("tower", []) as Array).filter(func(e: Variant) -> bool: return is_instance_valid(e) and not e.get(&"dead"))
 	_check("tower bandits back after two days", tower.size() == 2, "%d" % tower.size())
 
 	# --- Can't rest with enemies around.
@@ -161,7 +161,7 @@ func _initialize() -> void:
 	_check("loaded where she stood", player.global_position.distance_to(save_spot) < 2.0, "%.1f m off" % player.global_position.distance_to(save_spot))
 	var loaded_horse := get_first_node_in_group(&"horse") as Node3D
 	_check("horse where it was left", loaded_horse.global_position.distance_to(save_spot + Vector3(3, 0, 0)) < 2.5)
-	var tower_back: Array = (_groups().get("tower", []) as Array).filter(func(e: Node) -> bool: return is_instance_valid(e))
+	var tower_back: Array = (_groups().get("tower", []) as Array).filter(func(e: Variant) -> bool: return is_instance_valid(e))
 	_check("enemy groups restored", tower_back.size() == 2 and _groups().has("camp_chief"))
 
 	print("open_world test: %d failure(s)" % failures)

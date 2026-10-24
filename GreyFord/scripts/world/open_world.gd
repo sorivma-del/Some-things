@@ -10,6 +10,7 @@ const NATURE := "res://resources/models/nature/"
 const CAMPFIRE: PackedScene = preload("res://scenes/campfire.tscn")
 const PEDDLER: PackedScene = preload("res://scenes/merchants/peddler.tscn")
 const HERMIT: PackedScene = preload("res://scenes/world/hermit.tscn")
+const MILLER: PackedScene = preload("res://scenes/world/miller.tscn")
 const HORSE: PackedScene = preload("res://scenes/world/horse.tscn")
 ## Where the horse waits, tied at the crossroads, until Mara first rides it.
 const HORSE_START := Vector2(6.0, 86.0)
@@ -58,6 +59,7 @@ func _ready() -> void:
 	var encounters := WorldEncounters.new()
 	encounters.name = "Encounters"
 	add_child(encounters)
+	add_child(WorldActivity.new())
 	get_tree().call_group(&"world_lighting", &"set_fog_scale", CONFIG.fog_scale)
 	_arrive.call_deferred()
 	_hang_lantern.call_deferred()
@@ -398,6 +400,9 @@ func _build_mill() -> void:
 	sava.position = ground(c.x + 6, c.y - 4)
 	sava.rotation.y = atan2(-6.0, 4.0)
 	add_child(sava)
+	var miller := MILLER.instantiate() as WorldResident
+	miller.position = ground(miller.data.home.x, miller.data.home.y) + Vector3.UP * 0.2
+	add_child(miller)
 
 
 ## A ruined square watchtower, 2 x 2 modules: three storeys of bare brick, no roof.

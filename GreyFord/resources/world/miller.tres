@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="WorldResidentData" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/world_resident_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+home = Vector2(-57.5, 194)
+evening_spot = Vector2(-53, 199)
+route = PackedVector2Array(-57, 201, -48, 203, -43, 199, -50, 198)
+walk_speed = 1.1
+stop_seconds = 5.0
+arrival_distance = 0.6
+turn_speed = 5.0

@@ -23,3 +23,7 @@ deer_herds = 3
 deer_per_herd = 3
 fog_scale = 0.55
 draw_distance = 170.0
+terrain_chunk_cells = 32
+actor_sleep_distance = 110.0
+actor_wake_distance = 90.0
+activity_interval = 0.25

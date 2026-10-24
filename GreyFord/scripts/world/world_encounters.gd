@@ -58,7 +58,7 @@ func _refresh() -> void:
 			_spawn_group(def)
 	for id: String in _groups.keys():
 		if not wanted.has(id):
-			for enemy: Node in _groups[id]:
+			for enemy: Variant in _groups[id]:
 				if is_instance_valid(enemy):
 					enemy.queue_free()
 			_groups.erase(id)
@@ -114,7 +114,7 @@ func _on_died(_enemy: Enemy, group: String) -> void:
 
 
 func _alive(group: String) -> Array:
-	return (_groups.get(group, []) as Array).filter(func(e: Node) -> bool: return is_instance_valid(e) and not e.get(&"dead"))
+	return (_groups.get(group, []) as Array).filter(func(e: Variant) -> bool: return is_instance_valid(e) and not e.get(&"dead"))
 
 
 func _spawn_deer() -> void:

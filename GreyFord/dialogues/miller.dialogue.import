@@ -1,0 +1,16 @@
+[remap]
+
+importer="dialogue_manager"
+importer_version=18
+type="Resource"
+uid="uid://csajur01lopio"
+path="res://.godot/imported/miller.dialogue-326fa7f58f6f340586da4988717d0a59.tres"
+
+[deps]
+
+source_file="res://dialogues/miller.dialogue"
+dest_files=["res://.godot/imported/miller.dialogue-326fa7f58f6f340586da4988717d0a59.tres"]
+
+[params]
+
+defaults=true

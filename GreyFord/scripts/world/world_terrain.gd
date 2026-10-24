@@ -6,6 +6,7 @@ extends Node3D
 ## grid, uniformly scaled) and height_at() (bilinear), so feet, wheels and hooves agree.
 ## In group "terrain" like the village Terrain, so the same helpers place things on it.
 
+const CONFIG: WorldConfig = preload("res://resources/world/world_config.tres")
 const SHADER: Shader = preload("res://resources/terrain.gdshader")
 const TEX := "res://resources/textures/ground/"
 
@@ -198,32 +199,55 @@ func _sample(grid: PackedFloat32Array, x: float, z: float) -> float:
 
 
 func _build_mesh() -> void:
+	var material := _make_material()
+	var cells := maxi(1, CONFIG.terrain_chunk_cells)
+	var chunks := Node3D.new()
+	chunks.name = "TerrainChunks"
+	add_child(chunks)
+	for z0: int in range(0, _nz - 1, cells):
+		for x0: int in range(0, _nx - 1, cells):
+			_build_chunk(chunks, material, x0, z0, mini(x0 + cells, _nx - 1), mini(z0 + cells, _nz - 1))
+
+
+## Общие высоты и нормали сохраняют стыки; каждый участок отсекается камерой отдельно.
+func _build_chunk(parent: Node3D, material: ShaderMaterial, x0: int, z0: int, x1: int, z1: int) -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for zi: int in _nz:
-		for xi: int in _nx:
+	var width := x1 - x0 + 1
+	for zi: int in range(z0, z1 + 1):
+		for xi: int in range(x0, x1 + 1):
 			var i := zi * _nx + xi
 			var x := -HALF_WIDTH + xi * STEP
 			var z := Z_MIN + zi * STEP
 			var wet := _heights[i] < WATER_LEVEL - 0.2
 			st.set_color(Color(1.0 if wet else _mud(x, z, i), forest_weight(x, z), 0.0))
 			st.set_uv(Vector2(x, z))
+			st.set_normal(_normal_at(xi, zi))
 			st.add_vertex(Vector3(x, _heights[i], z))
-	for zi: int in _nz - 1:
-		for xi: int in _nx - 1:
-			var i := zi * _nx + xi
+	for zi: int in range(z1 - z0):
+		for xi: int in range(x1 - x0):
+			var i := zi * width + xi
 			st.add_index(i)
 			st.add_index(i + 1)
-			st.add_index(i + _nx)
+			st.add_index(i + width)
 			st.add_index(i + 1)
-			st.add_index(i + _nx + 1)
-			st.add_index(i + _nx)
-	st.generate_normals()
+			st.add_index(i + width + 1)
+			st.add_index(i + width)
 	st.generate_tangents()
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.mesh = st.commit()
-	mesh_instance.material_override = _make_material()
-	add_child(mesh_instance)
+	mesh_instance.material_override = material
+	parent.add_child(mesh_instance)
+
+
+func _normal_at(xi: int, zi: int) -> Vector3:
+	var left := maxi(xi - 1, 0)
+	var right := mini(xi + 1, _nx - 1)
+	var north := maxi(zi - 1, 0)
+	var south := mini(zi + 1, _nz - 1)
+	var dx := (_heights[zi * _nx + right] - _heights[zi * _nx + left]) / ((right - left) * STEP)
+	var dz := (_heights[south * _nx + xi] - _heights[north * _nx + xi]) / ((south - north) * STEP)
+	return Vector3(-dx, 1.0, -dz).normalized()
 
 
 ## Same grid as the mesh: heights halved and the shape scaled by 2 (uniform scale only).
