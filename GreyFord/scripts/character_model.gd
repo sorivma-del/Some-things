@@ -76,11 +76,19 @@ func _prepare(node: Node) -> void:
 		if hidden_parts.has(String(mesh.name)):
 			mesh.visible = false
 		else:
-			if head_only_parts.has(String(mesh.name)):
+			if _head_part_matches(String(mesh.name)):
 				_strip_to_head(mesh)
 			_tint_materials(mesh)
 	for child: Node in node.get_children():
 		_prepare(child)
+
+
+## В исходных файлах встречаются SuperHero и Superhero; это одна базовая сетка.
+func _head_part_matches(part: String) -> bool:
+	for candidate: String in head_only_parts:
+		if candidate.nocasecmp_to(part) == 0:
+			return true
+	return false
 
 
 ## Tints the model's own (shared) materials once. Overriding with duplicated materials

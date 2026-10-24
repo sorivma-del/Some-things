@@ -174,7 +174,9 @@ func _test_head_surface() -> void:
 	skin.add_bind(0, Transform3D.IDENTITY)
 	skin.set_bind_name(0, &"spine_01")
 	instance.skin = skin
-	model.call(&"_strip_to_head", instance)
+	instance.name = "SuperHero_Male"
+	model.set(&"head_only_parts", PackedStringArray(["Superhero_Male"]))
+	model.call(&"_prepare", instance)
 	_check("Отсечённое тело не возвращается в виде случайных треугольников", instance.mesh.get_surface_count() == 0)
 	instance.free()
 	model.free()

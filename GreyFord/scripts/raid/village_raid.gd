@@ -7,14 +7,17 @@ enum Phase { WARNING, FIRST_WAVE, BREATHER, FINAL_WAVE, VICTORY, DEFEAT }
 
 const CONFIG: RaidConfig = preload("res://resources/raid/raid_config.tres")
 const LOOK: WorldConfig = preload("res://resources/world/world_config.tres")
-const BANDIT: PackedScene = preload("res://scenes/enemies/bandit.tscn")
-const CHIEF: PackedScene = preload("res://scenes/enemies/bandit_chief.tscn")
+const BANDIT: PackedScene = preload("res://scenes/raid/raider.tscn")
+const CHIEF: PackedScene = preload("res://scenes/raid/raid_chief.tscn")
 const CIVILIAN: PackedScene = preload("res://scenes/raid/villager.tscn")
 
 var phase: Phase = Phase.WARNING
 var sheltered: int = 0
 var enemies: Array[Enemy] = []
 var _villagers: Array[RaidCivilian] = []
+var _pending_raiders: int = 0
+var _chief_pending: bool = false
+var _refill_scheduled: bool = false
 var _serial: int = 0
 var _owns_lock: bool = false
 var _intro_camera := Camera3D.new()
@@ -83,13 +86,14 @@ func start_attack() -> void:
 	$CameraRig.call(&"make_current")
 	_unlock()
 	_set_phase(Phase.FIRST_WAVE)
-	_objective("Удержите улицу у ворот", "ЛКМ / J — удар · Shift — блок · пробел — перекат · Q — цель · H — перевязка · Esc — меню")
+	_objective("Удержите улицу у ворот", "ЛКМ / J — комбо · Shift перед ударом — парирование · пробел — перекат · Q — цель · H — перевязка")
 	if alive_count() == 0:
 		_spawn_wave(CONFIG.first_wave_count, false)
 	else:
 		for enemy: Enemy in enemies:
 			enemy.set_physics_process(true)
 			enemy.join_hunt($Player.global_position)
+	_refresh_wave_goal()
 	_fires.ignite_cart()
 
 
@@ -102,10 +106,41 @@ func alive_count() -> int:
 
 
 func _spawn_wave(count: int, chief: bool, engage: bool = true) -> void:
-	for i: int in count:
-		_spawn_enemy(BANDIT, Vector3(-1.1 + i * 2.2, 0.2, 24.0 + i * 1.1), false, engage)
-	if chief:
-		_spawn_enemy(CHIEF, Vector3(0, 0.2, 26), true, engage)
+	_pending_raiders = count
+	_chief_pending = chief
+	_fill_slots(engage)
+
+
+func _fill_slots(engage: bool = true) -> void:
+	while alive_count() < CONFIG.max_active_enemies and (_pending_raiders > 0 or _chief_pending):
+		var chief := _chief_pending
+		if chief:
+			_chief_pending = false
+		else:
+			_pending_raiders -= 1
+		var lane := enemies.size() % CONFIG.max_active_enemies
+		var spot := Vector3(-1.8 + lane * 1.2, 0.2, 24.0 + (enemies.size() % 2) * 1.2)
+		_spawn_enemy(CHIEF if chief else BANDIT, spot, chief, engage)
+	_refresh_wave_goal()
+
+
+func _refresh_wave_goal() -> void:
+	if phase == Phase.FIRST_WAVE:
+		get_tree().call_group(&"hud", &"set_objective", "Первая волна · противников осталось: %d" % (alive_count() + pending_count()))
+	elif phase == Phase.FINAL_WAVE:
+		get_tree().call_group(&"hud", &"set_objective", "Атаман Ржа и его отряд · осталось: %d" % (alive_count() + pending_count()))
+
+
+func pending_count() -> int:
+	return _pending_raiders + (1 if _chief_pending else 0)
+
+
+func may_attack(candidate: Enemy) -> bool:
+	var attackers: int = 0
+	for enemy: Variant in enemies:
+		if is_instance_valid(enemy) and enemy != candidate and not enemy.dead and enemy.state == Enemy.State.ATTACK:
+			attackers += 1
+	return attackers < CONFIG.max_attackers
 
 
 func _spawn_enemy(scene: PackedScene, spot: Vector3, chief: bool, engage: bool) -> void:
@@ -114,6 +149,10 @@ func _spawn_enemy(scene: PackedScene, spot: Vector3, chief: bool, engage: bool) 
 	enemy.data.max_health = CONFIG.chief_health if chief else CONFIG.raider_health
 	enemy.data.sight_radius = CONFIG.sight_radius
 	enemy.data.leash_distance = CONFIG.leash_distance
+	enemy.set(&"role", 3 if chief else enemies.size() % 3)
+	if not chief and enemies.size() % 3 == 2:
+		enemy.weapon_scene = preload("res://resources/models/props/Axe_Bronze.gltf")
+		enemy.weapon_offset = GameState.item("woodsman_axe").hold_offset
 	enemy.parley = null
 	enemy.enemy_id = "raid_%d" % enemies.size()
 	enemy.pack_id = "raid"
@@ -131,7 +170,18 @@ func _spawn_enemy(scene: PackedScene, spot: Vector3, chief: bool, engage: bool) 
 
 
 func _enemy_died(_enemy: Enemy) -> void:
-	if alive_count() > 0:
+	if phase not in [Phase.FIRST_WAVE, Phase.FINAL_WAVE] or _refill_scheduled:
+		return
+	_refill_scheduled = true
+	_replenish.call_deferred()
+
+
+func _replenish() -> void:
+	_refill_scheduled = false
+	if phase not in [Phase.FIRST_WAVE, Phase.FINAL_WAVE]:
+		return
+	_fill_slots()
+	if alive_count() > 0 or pending_count() > 0:
 		return
 	if phase == Phase.FIRST_WAVE:
 		_between_waves()
@@ -161,6 +211,8 @@ func _finish(won: bool) -> void:
 	if phase in [Phase.VICTORY, Phase.DEFEAT]:
 		return
 	_serial += 1
+	_pending_raiders = 0
+	_chief_pending = false
 	_set_phase(Phase.VICTORY if won else Phase.DEFEAT)
 	_lock()
 	for enemy: Variant in enemies:

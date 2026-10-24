@@ -2,12 +2,62 @@
 
 [ext_resource type="Script" path="res://scripts/raid/raid_config.gd" id="1"]
 
+[ext_resource type="Script" path="res://scripts/raid/raid_role.gd" id="role"]
+
+[sub_resource type="Resource" id="duelist"]
+script = ExtResource("role")
+display_name = "Налётчик"
+health_factor = 0.85
+chase_speed = 3.7
+attack_interval = 1.15
+flank_degrees = 40.0
+poise = 12.0
+attack_clip = &"Sword_Regular_B"
+windup = 0.42
+damage = 12.0
+
+[sub_resource type="Resource" id="shield"]
+script = ExtResource("role")
+display_name = "Щитоносец"
+health_factor = 1.2
+chase_speed = 2.8
+attack_interval = 1.65
+flank_degrees = 20.0
+poise = 30.0
+attack_clip = &"Sword_Attack"
+windup = 0.55
+damage = 15.0
+
+[sub_resource type="Resource" id="brute"]
+script = ExtResource("role")
+display_name = "Рубака"
+health_factor = 1.15
+chase_speed = 3.0
+attack_interval = 1.9
+flank_degrees = 35.0
+poise = 35.0
+attack_clip = &"Sword_Regular_C"
+windup = 0.72
+damage = 23.0
+
+[sub_resource type="Resource" id="chief"]
+script = ExtResource("role")
+display_name = "Атаман Ржа"
+health_factor = 1.0
+chase_speed = 3.3
+attack_interval = 1.5
+flank_degrees = 25.0
+poise = 40.0
+attack_clip = &"Sword_Attack"
+windup = 0.6
+damage = 22.0
+
 [resource]
 script = ExtResource("1")
 warning_seconds = 6.0
 breather_seconds = 4.0
-first_wave_count = 2
-escort_count = 1
+first_wave_count = 6
+escort_count = 5
 raider_health = 60.0
 chief_health = 150.0
 sight_radius = 40.0
@@ -16,3 +66,19 @@ breather_heal = 35.0
 civilian_speed = 2.8
 ignition_flight_seconds = 1.1
 fire_energy = 3.0
+max_active_enemies = 4
+max_attackers = 2
+attack_turn_delay = 0.35
+parry_window = 0.2
+parry_cost = 8.0
+parry_stagger = 1.1
+guard_hits = 2
+guard_break_damage = 28.0
+combo_windups = PackedFloat32Array(0.2, 0.23, 0.34)
+combo_active = PackedFloat32Array(0.14, 0.15, 0.18)
+combo_recovery = PackedFloat32Array(0.28, 0.32, 0.46)
+combo_damage = PackedFloat32Array(1.0, 1.1, 1.6)
+combo_cost = PackedFloat32Array(1.0, 1.0, 1.5)
+role_profiles = Array[ExtResource("role")]([SubResource("duelist"), SubResource("shield"), SubResource("brute"), SubResource("chief")])
+guard_front_dot = 0.3
+combo_strike_fraction = 0.45

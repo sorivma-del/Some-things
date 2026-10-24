@@ -43,15 +43,27 @@ func _run() -> void:
 	_check("Вступление блокирует управление", gs.get(&"controls_locked"))
 	raid.call(&"start_attack")
 	await _wait(0.2)
-	_check("Первая волна началась, управление возвращено", int(raid.get(&"phase")) == 1 and not gs.get(&"controls_locked") and int(raid.call(&"alive_count")) == CONFIG.first_wave_count)
+	_check("Первая волна началась, управление возвращено", int(raid.get(&"phase")) == 1 and not gs.get(&"controls_locked") and int(raid.call(&"alive_count")) == mini(CONFIG.first_wave_count, CONFIG.max_active_enemies))
+	await _test_combat(raid)
 	await _wait(10.0)
 	_check("Поджог телеги запущен во время нападения", bool((raid.get(&"_fires") as Node).get(&"cart_ignited")))
 	_check("Жители достигли церкви", int(raid.get(&"sheltered")) == 3)
-	_clear(raid)
+	var maximum_attackers: int = 0
+	for sample: int in 100:
+		var active_attackers: int = 0
+		for opponent: Variant in raid.get(&"enemies"):
+			if is_instance_valid(opponent) and int(opponent.get(&"state")) == 4:
+				active_attackers += 1
+		maximum_attackers = maxi(maximum_attackers, active_attackers)
+		await physics_frame
+	_check("В настоящем бою атакуют не больше двух противников", maximum_attackers > 0 and maximum_attackers <= CONFIG.max_attackers)
+	await _clear_wave(raid)
+	_check("Первая волна использовала все подкрепления", (raid.get(&"enemies") as Array).size() == CONFIG.first_wave_count)
 	_check("После первой волны есть передышка", int(raid.get(&"phase")) == 2)
 	await _wait(CONFIG.breather_seconds + 0.4)
-	_check("Во второй волне главарь с сопровождением", int(raid.get(&"phase")) == 3 and int(raid.call(&"alive_count")) == CONFIG.escort_count + 1)
-	_clear(raid)
+	_check("Во второй волне главарь с сопровождением", int(raid.get(&"phase")) == 3 and int(raid.call(&"alive_count")) == mini(CONFIG.escort_count + 1, CONFIG.max_active_enemies))
+	await _clear_wave(raid)
+	_check("Полный набег содержит все запланированные отряды", (raid.get(&"enemies") as Array).size() == CONFIG.first_wave_count + CONFIG.escort_count + 1)
 	_check("Победа завершает бой", int(raid.get(&"phase")) == 4 and gs.get(&"controls_locked"))
 	await _wait(0.3)
 	raid.free()
@@ -64,6 +76,7 @@ func _run() -> void:
 	hero = raid.get_node(^"Player/Combat")
 	(hero.get(&"_hurtbox") as Node).call(&"receive", HIT_INFO.new(1000.0, 0.0, raid, Vector3.FORWARD))
 	_check("Смерть Мары даёт поражение", int(raid.get(&"phase")) == 5)
+	_check("Поражение отменяет оставшиеся подкрепления", int(raid.call(&"pending_count")) == 0)
 	await _wait(4.5)
 	_check("После поражения нет автоматического возрождения или новой волны", int(raid.get(&"phase")) == 5 and int(hero.get(&"state")) != 0)
 	raid.free()
@@ -102,3 +115,57 @@ func _test_navigation() -> void:
 	var cleanup := current_scene
 	current_scene = null
 	cleanup.free()
+
+
+func _clear_wave(raid: Node3D) -> void:
+	var old_phase: int = raid.get(&"phase")
+	for attempt: int in 12:
+		_clear(raid)
+		await _wait(0.1)
+		_check("Подкрепления не превышают лимит сцены", int(raid.call(&"alive_count")) <= CONFIG.max_active_enemies)
+		if int(raid.get(&"phase")) != old_phase:
+			return
+	_check("Волна завершилась после всех подкреплений", false)
+
+
+func _test_combat(raid: Node3D) -> void:
+	var hero := raid.get_node(^"Player/Combat")
+	var opponents: Array = raid.get(&"enemies")
+	for enemy: Node in opponents:
+		enemy.set_physics_process(false)
+	hero.set(&"invulnerable", false)
+	var health: float = hero.get(&"health")
+	Input.action_press(&"block")
+	await _wait(0.05)
+	var forward: Vector3 = hero.call(&"_forward")
+	var hit := HIT_INFO.new(12.0, 0.0, opponents[0], -forward)
+	(hero.get(&"_hurtbox") as Node).call(&"receive", hit)
+	_check("Своевременный блок парирует без потери здоровья", int(hit.result) == 2 and is_equal_approx(float(hero.get(&"health")), health))
+	_check("Парирование открывает противника для ответа", int(opponents[0].get(&"state")) == 5)
+	await _wait(CONFIG.parry_window + 0.2)
+	var late := HIT_INFO.new(12.0, 0.0, opponents[0], -forward)
+	(hero.get(&"_hurtbox") as Node).call(&"receive", late)
+	_check("Удержание блока после окна не создаёт новое парирование", int(late.result) == 2 and float(hero.get(&"_parry_left")) <= 0.0)
+	Input.action_release(&"block")
+	await _wait(0.05)
+	hero.call(&"restore")
+	hero.call(&"_start_attack", 2)
+	_check("Третий удар комбо сильнее обычного", float(hero.call(&"attack_damage")) > float((gs.call(&"equipped", "weapon") as Resource).get(&"damage")))
+	hero.call(&"_set_state", 0)
+	for i: int in CONFIG.max_attackers:
+		opponents[i].call(&"_set_state", 4)
+	_check("Лимит одновременных атак соблюдается", not raid.call(&"may_attack", opponents[CONFIG.max_attackers]))
+	for enemy: Node in opponents:
+		enemy.call(&"_set_state", 2)
+	var shield: Node = opponents[1]
+	var before: float = shield.get(&"health")
+	var normal := HIT_INFO.new(20.0, 0.0, raid.get_node(^"Player"), -(shield.call(&"_forward") as Vector3))
+	(shield.get(&"_hurtbox") as Node).call(&"receive", normal)
+	_check("Щитоносец закрывается от обычного удара спереди", int(normal.result) == 2 and is_equal_approx(float(shield.get(&"health")), before))
+	var heavy := HIT_INFO.new(CONFIG.guard_break_damage + 1.0, 0.0, raid.get_node(^"Player"), -(shield.call(&"_forward") as Vector3))
+	(shield.get(&"_hurtbox") as Node).call(&"receive", heavy)
+	_check("Тяжёлый удар пробивает прикрытие щитоносца", int(heavy.result) == 1 and float(shield.get(&"health")) < before)
+	hero.set(&"invulnerable", true)
+	hero.call(&"restore")
+	for enemy: Node in opponents:
+		enemy.set_physics_process(true)
