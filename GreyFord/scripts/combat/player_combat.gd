@@ -23,6 +23,8 @@ const ATTACK_CLIPS: Array[StringName] = [&"Sword_Regular_A", &"Sword_Regular_B"]
 const HOLD_BONES: Dictionary[String, StringName] = {"weapon": &"hand_r", "shield": &"hand_l"}
 const ACCELERATION := 16.0
 const TURN_SPEED := 12.0
+const SOUND: CombatSounds = preload("res://resources/audio/combat/mix.tres")
+const SOUND_PRIORITY: Dictionary[StringName, int] = {&"hit": 1, &"block": 2, &"parry": 3, &"hurt": 4}
 
 @export var data: HeroCombatData = preload("res://resources/combat/hero_combat.tres")
 
@@ -48,7 +50,10 @@ var _move_velocity: Vector3
 var _since_spend: float = 100.0
 var _spawn_point: Vector3
 var _sfx := AudioStreamPlayer3D.new()
-var _sounds: Dictionary[StringName, AudioStreamWAV] = {}
+var _impact_sfx := AudioStreamPlayer3D.new()
+var _sounds: Dictionary[StringName, AudioStream] = {}
+var _last_impact_ms: int = -1000
+var _last_impact_cue: StringName = &"hit"
 ## Slot -> the model currently held for it.
 var _held: Dictionary[String, Node3D] = {}
 
@@ -85,10 +90,17 @@ func _ready() -> void:
 	_model.add_child.call_deferred(_hitbox)
 	_hitbox.landed.connect(_on_landed)
 
-	_sfx.volume_db = -4.0
+	_sfx.volume_db = SOUND.swing_db
 	_sfx.position = Vector3(0, 1.2, 0)
+	_sfx.unit_size = SOUND.unit_size
+	_sfx.max_distance = SOUND.max_distance
 	_body.add_child.call_deferred(_sfx)
-	_sounds = {&"swing": ProceduralSound.swing(), &"hit": ProceduralSound.hit(), &"block": ProceduralSound.block()}
+	_impact_sfx.position = Vector3(0, 1.2, 0)
+	_impact_sfx.top_level = true
+	_impact_sfx.unit_size = SOUND.unit_size
+	_impact_sfx.max_distance = SOUND.max_distance
+	_body.add_child.call_deferred(_impact_sfx)
+	_sounds = SOUND.bank()
 	_arm.call_deferred()
 	GameState.equipment_changed.connect(_arm)
 
@@ -341,7 +353,7 @@ func _on_hit(info: HitInfo) -> void:
 	_take_damage(info.damage * (1.0 - _defense()))
 	_knockback = info.direction * info.knockback * data.hurt_knockback_scale
 	info.result = HitInfo.Result.HIT
-	_play_sound(&"hit")
+	_play_sound(&"hurt")
 	HitFeel.shake(get_tree(), data.shake_hurt, data.shake_time)
 	HitFeel.hitstop(get_tree(), data.hitstop_hurt_ms)
 	if health <= 0.0:
@@ -360,7 +372,10 @@ func _take_damage(amount: float) -> void:
 
 
 func _on_landed(_hurtbox: Hurtbox, info: HitInfo) -> void:
-	_play_sound(&"block" if info.result == HitInfo.Result.BLOCKED else &"hit")
+	if info.result == HitInfo.Result.IGNORED:
+		return
+	var point := _hurtbox.global_position if is_instance_valid(_hurtbox) else _body.global_position + Vector3.UP
+	_play_sound(&"block" if info.result == HitInfo.Result.BLOCKED else &"hit", point)
 	HitFeel.shake(get_tree(), data.shake_hit, data.shake_time)
 	HitFeel.hitstop(get_tree(), data.hitstop_ms)
 
@@ -505,9 +520,28 @@ func _camera_relative_input() -> Vector3:
 	return (right.normalized() * input.x - forward.normalized() * input.y).normalized()
 
 
-func _play_sound(sound: StringName) -> void:
-	_sfx.stream = _sounds[sound]
-	_sfx.pitch_scale = randf_range(0.9, 1.1)
-	_sfx.play()
+func _play_sound(sound: StringName, point: Vector3 = Vector3.INF) -> void:
+	if sound == &"swing":
+		_sfx.stream = _sounds[sound]
+		_sfx.play()
+		return
+	var now := Time.get_ticks_msec()
+	# Несколько целей одного взмаха не складываются в треск. Ранение важнее попадания.
+	if now - _last_impact_ms < SOUND.impact_interval_ms and SOUND_PRIORITY[sound] <= SOUND_PRIORITY[_last_impact_cue]:
+		return
+	_last_impact_ms = now
+	_last_impact_cue = sound
+	_impact_sfx.global_position = point if point.is_finite() else _body.global_position + Vector3.UP * 1.2
+	_impact_sfx.volume_db = SOUND.volume(sound)
+	_impact_sfx.stream = _sounds[sound]
+	_impact_sfx.play()
+
+
+func _exit_tree() -> void:
+	for voice: AudioStreamPlayer3D in [_sfx, _impact_sfx]:
+		if is_instance_valid(voice):
+			voice.stop()
+			voice.stream = null
+	_sounds.clear()
 
 #endregion

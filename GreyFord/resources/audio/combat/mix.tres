@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="CombatSounds" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/combat_sounds.gd" id="1"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/knifeSlice.ogg" id="knifeSlice"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/knifeSlice2.ogg" id="knifeSlice2"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/impactPunch_medium_000.ogg" id="impactPunch_medium_000"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/impactPunch_medium_001.ogg" id="impactPunch_medium_001"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/impactPunch_medium_002.ogg" id="impactPunch_medium_002"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/impactPunch_heavy_000.ogg" id="impactPunch_heavy_000"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/impactPunch_heavy_001.ogg" id="impactPunch_heavy_001"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/impactPunch_heavy_002.ogg" id="impactPunch_heavy_002"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/impactMetal_medium_000.ogg" id="impactMetal_medium_000"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/impactMetal_medium_001.ogg" id="impactMetal_medium_001"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/impactMetal_medium_002.ogg" id="impactMetal_medium_002"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/impactMetal_light_000.ogg" id="impactMetal_light_000"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/impactMetal_light_001.ogg" id="impactMetal_light_001"]
+[ext_resource type="AudioStream" path="res://resources/audio/combat/impactMetal_light_002.ogg" id="impactMetal_light_002"]
+
+[resource]
+script = ExtResource("1")
+swing = Array[AudioStream]([ExtResource("knifeSlice"), ExtResource("knifeSlice2")])
+hit = Array[AudioStream]([ExtResource("impactPunch_medium_000"), ExtResource("impactPunch_medium_001"), ExtResource("impactPunch_medium_002")])
+hurt = Array[AudioStream]([ExtResource("impactPunch_heavy_000"), ExtResource("impactPunch_heavy_001"), ExtResource("impactPunch_heavy_002")])
+block = Array[AudioStream]([ExtResource("impactMetal_medium_000"), ExtResource("impactMetal_medium_001"), ExtResource("impactMetal_medium_002")])
+parry = Array[AudioStream]([ExtResource("impactMetal_light_000"), ExtResource("impactMetal_light_001"), ExtResource("impactMetal_light_002")])
+swing_db = -14.0
+hit_db = -5.0
+hurt_db = -4.0
+block_db = -8.0
+parry_db = -6.0
+unit_size = 7.0
+max_distance = 24.0
+random_pitch = 1.025
+impact_interval_ms = 45

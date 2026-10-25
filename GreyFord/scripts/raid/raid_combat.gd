@@ -129,7 +129,7 @@ func _on_hit(info: HitInfo) -> void:
 		_counter_target.stagger_from_parry()
 		_set_target(_counter_target)
 		_counter_left = RAID.counter_window
-		_play_sound(&"block")
+		_play_sound(&"parry")
 		HitFeel.hitstop(get_tree(), data.hitstop_hurt_ms)
 		GameState.notified.emit("Парирование! %s — контратака" % GameControls.attack_button())
 		parried.emit(info.source)
