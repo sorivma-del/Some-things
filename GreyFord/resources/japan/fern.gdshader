@@ -5,7 +5,7 @@ uniform sampler2D alpha_map : filter_linear_mipmap, repeat_enable;
 uniform sampler2D normal_map : hint_normal, filter_linear_mipmap, repeat_enable;
 void vertex() {
 	vec3 center = MODEL_MATRIX[3].xyz;
-	VERTEX.x += sin(TIME * 1.1 + center.x * 0.5 + center.z * 0.2) * max(VERTEX.y, 0.0) * 0.025;
+	VERTEX.x += sin(TIME * 1.1 + center.x * 0.7 + center.z * 0.3) * max(VERTEX.y, 0.0) * 0.025;
 }
 void fragment() {
 	ALBEDO = texture(diffuse_map, UV).rgb * vec3(0.65, 0.78, 0.6);

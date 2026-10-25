@@ -16,6 +16,9 @@ func _check(label: String, ok: bool) -> void:
 
 func _run() -> void:
 	await process_frame
+	var paving := ShrineCraft.paver(2.6, 0.61, 73)
+	var normals: PackedVector3Array = paving.surface_get_arrays(0)[Mesh.ARRAY_NORMAL]
+	_check("Лицевая сторона плиты смотрит вверх и видна игроку", normals[0].y > 0.9)
 	var gs := root.get_node(^"GameState")
 	var controls := root.get_node(^"GameControls")
 	var save_path := "user://greyford_save.json"
@@ -44,6 +47,7 @@ func _run() -> void:
 	var player := scene.get_node(^"Player") as Node3D
 	var guard: Node = scene.get(&"enemies")[0]
 	_check("Вступление блокирует бой и включает постановочную камеру", gs.get(&"controls_locked") and root.get_camera_3d().name == &"EpisodeCamera")
+	_check("У стража есть объёмный кабуто", guard.find_child("Kabuto", true, false) != null)
 	_check("Один страж ждёт окончания сцены", scene.get(&"enemies").size() == 1 and not guard.is_physics_processing())
 	var held: Dictionary = hero.get(&"_held")
 	_check("Катана в руке, щит не добавляется", held.size() == 1 and held.has("weapon") and held["weapon"].name == &"Katana")
@@ -100,6 +104,8 @@ func _run() -> void:
 	beacon.call(&"interact")
 	_check("После боя Мара опускает оружие для разговора", hero.get(&"peaceful") and not hero.get(&"_held")["weapon"].visible)
 	_check("До разговора нельзя завершить задание жаровней", int(scene.get(&"phase")) == 3 and not aftermath.get(&"burning"))
+	await create_timer(1.0).timeout
+	_check("Аки выходит из укрытия к отмеченному месту", aftermath.get(&"survivor").position.distance_to(Vector3(-3.1, 0.11, 3.2)) < 0.1 and aftermath.get(&"survivor_area").enabled)
 	player.call(&"teleport", Vector3(-2, 0.2, 2.4))
 	await create_timer(0.12).timeout
 	var interact := InputEventKey.new()
@@ -132,9 +138,11 @@ func _run() -> void:
 	_check("К жаровне можно дойти по земле без телепорта и прыжка на веранду", Vector2(player.position.x + 5.0, player.position.z - 4.0).length() < 0.4)
 	await create_timer(0.12).timeout
 	await _pad(JOY_BUTTON_A)
+	_check("Поджигание начинается движением руки до появления огня", int(scene.get(&"phase")) == 7 and not aftermath.get(&"burning") and hero.get(&"_interaction_left") > 0.0)
+	await create_timer(0.95).timeout
 	_check("Взаимодействие с жаровней включает огонь и финальный кадр", int(scene.get(&"phase")) == 7 and aftermath.get(&"burning") and gs.get(&"controls_locked"))
 	beacon.call(&"interact")
-	await create_timer(4.4).timeout
+	await create_timer(3.5).timeout
 	_check("Задание завершается один раз и открывает повтор", int(scene.get(&"phase")) == 8 and not gs.get(&"controls_locked") and scene.get(&"_result").visible)
 	_check("Параметры обычного разбойника не изменились", is_equal_approx(float(bandit.get(&"max_health")), original_health))
 	scene.call(&"_start_training")

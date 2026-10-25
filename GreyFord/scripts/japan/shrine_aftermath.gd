@@ -15,6 +15,10 @@ var _light: OmniLight3D
 var _sound: AudioStreamPlayer3D
 var _survivor_marker: Label3D
 var _beacon_marker: Label3D
+var _arrival: Tween
+var _arrival_revision: int = 0
+var _conversation_open: bool = false
+var _reaction_left: float = 0
 
 
 func _ready() -> void:
@@ -44,7 +48,7 @@ func _survivor() -> void:
 	survivor_model.parts = [preload("res://resources/models/characters/outfits/Female_Peasant.gltf"), preload("res://resources/models/characters/hair/Hair_Buns.gltf")]
 	survivor_model.head_only_parts = PackedStringArray(["Superhero_Female"])
 	survivor_model.tint = Color(0.65, 0.7, 0.67)
-	survivor_model.default_animation = &"Idle_FoldArms"
+	survivor_model.default_animation = &"Idle"
 	survivor.add_child(survivor_model)
 	for node: Node in survivor_model.find_children("*", "MeshInstance3D", true, false):
 		if not String(node.name).contains("Hair"):
@@ -56,6 +60,7 @@ func _survivor() -> void:
 				var hair := original.duplicate() as StandardMaterial3D
 				hair.albedo_color = Color(0.14, 0.11, 0.085)
 				mesh.set_surface_override_material(index, hair)
+	ShrineWardrobe.survivor(survivor_model)
 	survivor_area = _interaction(survivor, "Поговорить с выжившей", Vector3(0, 0.8, 0))
 	survivor_area.interacted.connect(func() -> void: conversation_requested.emit())
 	_survivor_marker = _marker(survivor, "АКИ · ВЫЖИВШАЯ", Vector3(0, 2.15, 0))
@@ -74,12 +79,10 @@ func _beacon() -> void:
 	for i: int in 3:
 		var angle := float(i) * TAU / 3.0
 		Build.cylinder(beacon, 0.045, 1.0, Vector3(cos(angle) * 0.28, 0.5, sin(angle) * 0.28), iron, 8)
-	var bowl := CylinderMesh.new()
-	bowl.top_radius = 0.6
-	bowl.bottom_radius = 0.29
-	bowl.height = 0.3
-	bowl.radial_segments = 20
-	Build.mesh(beacon, bowl, iron, Vector3(0, 1.05, 0))
+	var bowl := MeshInstance3D.new()
+	bowl.mesh = ShrineCraft.lathe(PackedVector2Array([Vector2(0.17, 0.88), Vector2(0.37, 0.96), Vector2(0.59, 1.18), Vector2(0.55, 1.19), Vector2(0.33, 1.0), Vector2(0.12, 0.94), Vector2(0, 0.94)]))
+	bowl.material_override = iron
+	beacon.add_child(bowl)
 	for i: int in 4:
 		Build.cylinder(beacon, 0.055, 0.8, Vector3(0, 1.23 + i * 0.025, 0), wood, 7, Vector3(90, i * 45, 0))
 	Build.static_box(beacon, Vector3(1.05, 1.35, 1.05), Vector3(0, 0.65, 0))
@@ -88,9 +91,12 @@ func _beacon() -> void:
 	_beacon_marker = _marker(beacon, "СИГНАЛЬНЫЙ ОГОНЬ", Vector3(0, 2.3, 0))
 	_fire = Node3D.new()
 	beacon.add_child(_fire)
-	Effects.flames(_fire, Vector3(0, 1.3, 0)).amount = 28
+	ShrineCraft.fire(_fire).position.y = 1.24
 	Effects.sparks(_fire, Vector3(0, 1.4, 0)).amount = 10
-	Effects.smoke(_fire, Vector3(0, 1.7, 0), 8, 0.6)
+	var smoke := Effects.smoke(_fire, Vector3(0, 1.7, 0), 8, 0.6)
+	var smoke_mat := ShaderMaterial.new()
+	smoke_mat.shader = preload("res://resources/japan/smoke.gdshader")
+	smoke.mesh.surface_set_material(0, smoke_mat)
 	_light = OmniLight3D.new()
 	_light.position.y = 1.8
 	_light.light_color = Color(1, 0.49, 0.18)
@@ -143,6 +149,7 @@ func reset() -> void:
 	beacon_area.enabled = false
 	_beacon_marker.hide()
 	burning = false
+	_reaction_left = 0
 	_fire.hide()
 	for node: Node in _fire.get_children():
 		if node is CPUParticles3D:
@@ -152,10 +159,26 @@ func reset() -> void:
 
 
 func set_survivor_active(value: bool) -> void:
+	_arrival_revision += 1
+	if is_instance_valid(_arrival):
+		_arrival.kill()
 	survivor.visible = value
 	(survivor.get_node(^"Body") as CollisionShape3D).set_deferred(&"disabled", not value)
-	survivor_area.enabled = value
+	survivor_area.enabled = false
 	_survivor_marker.visible = value
+	_conversation_open = false
+	if value:
+		var revision := _arrival_revision
+		survivor.position = EPISODE.survivor_position + Vector3(0, 0, 1.2)
+		survivor_model.rotation.y = 0
+		survivor_model.play(&"Walk")
+		_arrival = create_tween()
+		_arrival.tween_property(survivor, ^"position", EPISODE.survivor_position, EPISODE.survivor_arrival_seconds)
+		_arrival.finished.connect(func() -> void:
+			if revision == _arrival_revision and not _conversation_open:
+				survivor_model.play(&"Idle")
+				survivor_area.enabled = true)
+	set_process(value or burning)
 
 
 func enable_beacon() -> void:
@@ -166,8 +189,14 @@ func enable_beacon() -> void:
 
 
 func set_conversation_open(value: bool) -> void:
+	_conversation_open = value
 	survivor_area.enabled = not value
 	_survivor_marker.visible = not value
+
+
+func begin_lighting() -> void:
+	beacon_area.enabled = false
+	_beacon_marker.hide()
 
 
 func ignite() -> void:
@@ -182,9 +211,21 @@ func ignite() -> void:
 			(node as CPUParticles3D).restart()
 			(node as CPUParticles3D).emitting = true
 	_sound.play()
+	survivor_model.play_once(&"Idle_Talking", 2.2)
+	_reaction_left = 2.2
 	set_process(true)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	var time := float(Time.get_ticks_msec()) * 0.001
-	_light.light_energy = 2.1 + sin(time * 7.3) * 0.17 + sin(time * 11.7) * 0.1
+	if burning:
+		_light.light_energy = 1.65 + sin(time * 7.3) * 0.12 + sin(time * 11.7) * 0.08
+	if _reaction_left > 0:
+		_reaction_left = maxf(0, _reaction_left - delta)
+		if _reaction_left == 0:
+			survivor_model.play(&"Idle")
+	if survivor.visible and not _conversation_open and (not is_instance_valid(_arrival) or not _arrival.is_running()):
+		var player := get_tree().get_first_node_in_group(&"player") as Node3D
+		if player and player.position.distance_to(survivor.position) < 7:
+			var direction := player.position - survivor.position
+			survivor_model.rotation.y = lerp_angle(survivor_model.rotation.y, atan2(-direction.x, -direction.z), minf(delta * 1.7, 1))

@@ -19,6 +19,8 @@ var _result: HBoxContainer
 var _retry: Button
 var _aftermath: ShrineAftermath
 var _choices: VBoxContainer
+var _polish: ShrinePolish
+var _signal_ignited: bool = false
 
 
 func _ready() -> void:
@@ -33,11 +35,8 @@ func _ready() -> void:
 	add_child(_aftermath)
 	_aftermath.conversation_requested.connect(_begin_conversation)
 	_aftermath.beacon_requested.connect(_light_signal)
-	# Свет существующих фонарей достаёт до лиц, сохраняя тёмный лес позади.
-	for node: Node in $CourtyardArchitecture.get_children():
-		if node is OmniLight3D and node.position.z < 2.0:
-			(node as OmniLight3D).omni_range = 7.5
-			(node as OmniLight3D).light_energy = 2.2
+	_polish = ShrinePolish.new()
+	add_child(_polish)
 	_start_training.call_deferred()
 
 
@@ -47,6 +46,8 @@ func set_evening(value: bool) -> void:
 		_env.fog_density = 0.0085
 		_env.fog_light_color = Color(0.2, 0.27, 0.3)
 		_env.ambient_light_energy = 0.4
+	if is_instance_valid(_polish):
+		_polish.apply_lighting(value)
 
 
 func _build_ui() -> void:
@@ -136,6 +137,9 @@ func _start_training() -> void:
 	enemies.clear()
 	if is_instance_valid(_aftermath):
 		_aftermath.reset()
+	if is_instance_valid(_polish):
+		_polish.set_conversation(false)
+	_signal_ignited = false
 	_choices.hide()
 	_hero.call(&"_set_target", null)
 	_hero.call(&"_set_state", PlayerCombat.State.NORMAL)
@@ -211,6 +215,9 @@ func _process(delta: float) -> void:
 	if is_instance_valid(_cinema):
 		_cinema.look_at(_look)
 	if phase == Phase.SIGNAL_ENDING:
+		if not _signal_ignited and _elapsed >= EPISODE.ignition_delay:
+			_signal_ignited = true
+			_aftermath.ignite()
 		if _elapsed >= EPISODE.beacon_ending_seconds:
 			_show_result(true)
 		return
@@ -327,6 +334,7 @@ func _begin_conversation() -> void:
 	if phase != Phase.VICTORY:
 		return
 	phase = Phase.TALK
+	_polish.set_conversation(true)
 	_aftermath.set_conversation_open(true)
 	_lock()
 	GameControls.consume_menu_action()
@@ -341,7 +349,7 @@ func _begin_conversation() -> void:
 	$HUD.hide()
 	_movie_ui.show()
 	_skip.hide()
-	_camera_shot(Vector3(-0.5, 1.85, 1.7), Vector3(-0.7, 1.8, 2.1), EPISODE.survivor_position + Vector3(0.3, 1.1, 0), EPISODE.challenge_seconds)
+	_camera_shot(Vector3(-3.8, 1.65, 0.4), Vector3(-3.7, 1.65, 0.8), Vector3(-2.55, 1.12, 3.0), EPISODE.challenge_seconds)
 	_set_choices(false)
 
 
@@ -370,10 +378,11 @@ func _close_conversation(accept: bool) -> void:
 		return
 	GameControls.consume_menu_action()
 	_choices.hide()
+	_polish.set_conversation(false)
 	_movie_ui.hide()
 	$HUD.show()
 	_hint.show()
-	_aftermath.survivor_model.play(&"Idle_FoldArms")
+	_aftermath.survivor_model.play(&"Idle")
 	_aftermath.set_conversation_open(false)
 	_unlock()
 	_restore_camera()
@@ -388,11 +397,15 @@ func _close_conversation(accept: bool) -> void:
 func _light_signal() -> void:
 	if phase != Phase.SIGNAL:
 		return
-	_aftermath.ignite()
 	phase = Phase.SIGNAL_ENDING
+	_aftermath.begin_lighting()
+	_signal_ignited = false
 	_elapsed = 0
 	_lock()
 	GameControls.consume_menu_action()
+	$Player.teleport(EPISODE.beacon_position + Vector3(0.8, 0.01, -0.8))
+	$Player.face_point(EPISODE.beacon_position)
+	_hero.call(&"play_lighting")
 	_hint.hide()
 	$HUD.hide()
 	_movie_ui.show()

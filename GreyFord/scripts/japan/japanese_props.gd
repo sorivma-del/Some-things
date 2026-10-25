@@ -3,6 +3,7 @@ extends RefCounted
 ## Отдельный двор: собственная геометрия и проверенные фотоматериалы проекта.
 
 const LEAF: Shader = preload("res://resources/japan/bamboo.gdshader")
+static var _scanned_rocks: Array[ArrayMesh] = []
 
 
 static func build(parent: Node3D) -> void:
@@ -17,6 +18,9 @@ static func build(parent: Node3D) -> void:
 	var sand := ShaderMaterial.new()
 	sand.shader = load("res://resources/japan/gravel.gdshader") as Shader
 	sand.set_shader_parameter(&"grain", load("res://resources/textures/gate_street/rough_plaster_03_diff.jpg"))
+	sand.set_shader_parameter(&"gravel_color", load("res://resources/japan/detail_assets/gravelly_sand/diff.jpg"))
+	sand.set_shader_parameter(&"gravel_normal", load("res://resources/japan/detail_assets/gravelly_sand/normal.jpg"))
+	sand.set_shader_parameter(&"mud_color", load("res://resources/textures/ground/brown_mud_03_diff.jpg"))
 	wood.normal_scale = 0.15
 	red.normal_scale = 0.15
 	wood.metallic_specular = 0.15
@@ -35,7 +39,11 @@ static func build(parent: Node3D) -> void:
 	Build.static_box(root, Vector3(28, 1.4, 0.5), Vector3(0, 0.7, -14))
 	for i: int in 24:
 		var z := -11.0 + i * 0.72
-		var slab := Build.box(root, Vector3(2.6 + sin(i * 13) * 0.15, 0.05, 0.61), Vector3(sin(i * 7) * 0.08, 0.06, z), stone)
+		var slab := MeshInstance3D.new()
+		slab.mesh = ShrineCraft.paver(2.6 + sin(i * 13) * 0.15, 0.61, i + 73)
+		slab.material_override = stone
+		slab.position = Vector3(sin(i * 7) * 0.08, 0.06, z)
+		root.add_child(slab)
 		slab.rotation.y = sin(i * 5) * 0.025
 	_torii(root, red, roof, stone)
 	_sanctuary(root, wood, plaster, roof, stone)
@@ -284,9 +292,25 @@ static func _bamboo(root: Node3D) -> void:
 
 static func _batch(root: Node3D) -> void:
 	var batches: Dictionary[Material, SurfaceTool] = {}
+	var rocks: Dictionary[Mesh, Array] = {}
 	var originals: Array[MeshInstance3D] = []
 	for node: Node in root.find_children("*", "MeshInstance3D", true, false):
 		var mesh := node as MeshInstance3D
+		var ancestor: Node = mesh.get_parent()
+		var skip: bool = false
+		while ancestor != root and ancestor != null:
+			if ancestor.has_meta(&"skip_batch"):
+				skip = true
+				break
+			ancestor = ancestor.get_parent()
+		if skip or mesh.mesh.get_surface_count() != 1:
+			continue
+		if mesh.mesh.has_meta(&"scanned_rock"):
+			if not rocks.has(mesh.mesh):
+				rocks[mesh.mesh] = []
+			rocks[mesh.mesh].append(_relative_transform(mesh, root))
+			originals.append(mesh)
+			continue
 		var arrays := mesh.mesh.surface_get_arrays(0)
 		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
 		if indices.is_empty():
@@ -298,15 +322,38 @@ static func _batch(root: Node3D) -> void:
 			var st := SurfaceTool.new()
 			st.begin(Mesh.PRIMITIVE_TRIANGLES)
 			batches[material] = st
-		batches[material].append_from(mesh.mesh, 0, root.global_transform.affine_inverse() * mesh.global_transform)
+		batches[material].append_from(mesh.mesh, 0, _relative_transform(mesh, root))
 		originals.append(mesh)
 	for material: Material in batches:
 		var combined := MeshInstance3D.new()
 		combined.mesh = batches[material].commit()
 		combined.material_override = material
 		root.add_child(combined)
+	for template: Mesh in rocks:
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = template
+		mm.instance_count = rocks[template].size()
+		for i: int in mm.instance_count:
+			mm.set_instance_transform(i, rocks[template][i])
+		var instance := MultiMeshInstance3D.new()
+		instance.name = "ScannedMossRocks"
+		instance.multimesh = mm
+		instance.lod_bias = 0.35
+		instance.visibility_range_end = 65
+		root.add_child(instance)
 	for mesh: MeshInstance3D in originals:
 		mesh.free()
+
+
+static func _relative_transform(node: Node3D, root: Node3D) -> Transform3D:
+	var result := node.transform
+	var parent: Node = node.get_parent()
+	while parent != root and parent != null:
+		if parent is Node3D:
+			result = (parent as Node3D).transform * result
+		parent = parent.get_parent()
+	return result
 
 
 static func _stone() -> StandardMaterial3D:
@@ -340,7 +387,6 @@ static func _rock_gardens(root: Node3D, stone: Material) -> void:
 			var pos := center + Vector3(-0.9 + i * 0.8, 0.18, sin(i * 5) * 0.5)
 			var mesh := MeshInstance3D.new()
 			mesh.mesh = rock
-			mesh.material_override = stone
 			mesh.position = pos
 			root.add_child(mesh)
 			mesh.scale = Vector3(1.3, 0.6 + i * 0.35, 1.0)
@@ -349,26 +395,12 @@ static func _rock_gardens(root: Node3D, stone: Material) -> void:
 
 
 static func boulder_mesh(seed_value: int) -> ArrayMesh:
-	var sphere := SphereMesh.new()
-	sphere.radius = 0.6
-	sphere.height = 1.2
-	sphere.radial_segments = 16
-	sphere.rings = 9
-	var arrays := sphere.surface_get_arrays(0)
-	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-	var noise := FastNoiseLite.new()
-	noise.seed = seed_value
-	noise.frequency = 2.8
-	for i: int in vertices.size():
-		var p := vertices[i]
-		vertices[i] = p * (1.0 + noise.get_noise_3dv(p) * 0.5)
-	arrays[Mesh.ARRAY_VERTEX] = vertices
-	arrays[Mesh.ARRAY_NORMAL] = null
-	arrays[Mesh.ARRAY_TANGENT] = null
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	var st := SurfaceTool.new()
-	st.create_from(mesh, 0)
-	st.generate_normals()
-	st.generate_tangents()
-	return st.commit()
+	if _scanned_rocks.is_empty():
+		var packed := load("res://resources/japan/detail_assets/rock_moss_set_01/garden_rocks.gltf") as PackedScene
+		var source := packed.instantiate() as Node3D
+		for node: Node in source.find_children("*", "MeshInstance3D", true, false):
+			var mesh := (node as MeshInstance3D).mesh as ArrayMesh
+			mesh.set_meta(&"scanned_rock", true)
+			_scanned_rocks.append(mesh)
+		source.free()
+	return _scanned_rocks[posmod(seed_value, _scanned_rocks.size())]

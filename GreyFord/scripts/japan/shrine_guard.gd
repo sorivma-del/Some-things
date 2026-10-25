@@ -26,4 +26,6 @@ func _ready() -> void:
 		for row: int in 4:
 			var plate := Build.box(armor, Vector3(0.19, 0.06, 0.22), Vector3(side * (0.23 + row * 0.015), 0.12 - row * 0.055, 0), iron)
 			plate.rotation.z = side * 0.18
+	JapaneseProps._batch(armor)
 	RaidAppearance._attach(model, model.get(&"_skeleton") as Skeleton3D, armor, &"spine_03", Vector3.ZERO)
+	ShrineWardrobe.guard(model)

@@ -17,3 +17,7 @@ extends Resource
 @export var survivor_position: Vector3
 @export var beacon_position: Vector3
 @export var beacon_ending_seconds: float
+@export var target_fps: int
+@export var survivor_arrival_seconds: float
+@export var ignition_delay: float
+@export var lighting_animation_seconds: float

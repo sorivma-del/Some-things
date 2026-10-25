@@ -99,10 +99,8 @@ static func _rope(root: Node3D, wood: Material) -> void:
 		var b := Vector3(x1, 3.25 - 0.25 * (1.0 - pow(x1 / 2.55, 2.0)), -3.15)
 		var rope := Build.cylinder(root, 0.055, a.distance_to(b), (a + b) * 0.5, hemp, 9)
 		rope.quaternion = Quaternion(Vector3.UP, (b - a).normalized())
-	var paper := StandardMaterial3D.new()
-	paper.albedo_color = Color(0.73, 0.7, 0.57)
-	paper.roughness = 1.0
-	paper.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var paper := ShaderMaterial.new()
+	paper.shader = preload("res://resources/japan/shide.gdshader")
 	for x: float in [-1.8, -0.6, 0.6, 1.8]:
 		for i: int in 3:
 			var strip := Build.box(root, Vector3(0.12, 0.18, 0.012), Vector3(x + (0.05 if i % 2 == 0 else 0.0), 2.88 - i * 0.13, -3.18), paper)
@@ -127,7 +125,6 @@ static func _garden(root: Node3D, stone: Material, wood: Material) -> void:
 		for i: int in 13:
 			var mesh := MeshInstance3D.new()
 			mesh.mesh = JapaneseProps.boulder_mesh(i + int(side) * 71)
-			mesh.material_override = stone
 			mesh.position = Vector3(side * rng.randf_range(10.5, 13.3), rng.randf_range(-0.1, 0.1), -9 + i * 2.1)
 			mesh.scale = Vector3(rng.randf_range(0.8, 2.2), rng.randf_range(0.5, 1.3), rng.randf_range(0.7, 1.7))
 			mesh.rotation.y = rng.randf_range(0, TAU)
@@ -138,9 +135,8 @@ static func _garden(root: Node3D, stone: Material, wood: Material) -> void:
 		var angle := i * TAU / 20.0
 		var mesh := MeshInstance3D.new()
 		mesh.mesh = JapaneseProps.boulder_mesh(i + 301)
-		mesh.material_override = stone
-		mesh.position = Vector3(8 + cos(angle) * 2.23, 0.12, 1.2 + sin(angle) * 3.23)
-		mesh.scale = Vector3(0.6, 0.35, 0.6)
+		mesh.position = Vector3(8 + cos(angle) * 2.23, 0.23, 1.2 + sin(angle) * 3.23)
+		mesh.scale = Vector3(0.6, 0.7, 0.6)
 		root.add_child(mesh)
 	for side: float in [-1.0, 1.0]:
 		for i: int in 18:
