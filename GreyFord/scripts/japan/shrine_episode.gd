@@ -1,7 +1,7 @@
 extends JapaneseCourtyard
 ## Первое прибытие и дуэль. Все переходы принадлежат сцене, сохранение не записывается.
 
-enum Phase { INTRO, DUEL, ENDING, VICTORY, DEFEAT }
+enum Phase { INTRO, DUEL, ENDING, VICTORY, DEFEAT, TALK, SIGNAL, SIGNAL_ENDING, COMPLETE }
 const EPISODE: ShrineEpisodeConfig = preload("res://resources/japan/episode.tres")
 const GUARD: PackedScene = preload("res://scenes/japan/shrine_guard.tscn")
 var phase: Phase = Phase.INTRO
@@ -17,6 +17,8 @@ var _subtitle: Label
 var _skip: Button
 var _result: HBoxContainer
 var _retry: Button
+var _aftermath: ShrineAftermath
+var _choices: VBoxContainer
 
 
 func _ready() -> void:
@@ -26,6 +28,11 @@ func _ready() -> void:
 	_cinema.fov = 48
 	_cinema.near = 0.08
 	add_child(_cinema)
+	_aftermath = ShrineAftermath.new()
+	_aftermath.name = "Aftermath"
+	add_child(_aftermath)
+	_aftermath.conversation_requested.connect(_begin_conversation)
+	_aftermath.beacon_requested.connect(_light_signal)
 	# Свет существующих фонарей достаёт до лиц, сохраняя тёмный лес позади.
 	for node: Node in $CourtyardArchitecture.get_children():
 		if node is OmniLight3D and node.position.z < 2.0:
@@ -97,6 +104,7 @@ func _build_ui() -> void:
 	_subtitle.offset_bottom = -48
 	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UiStyle.apply_label(_subtitle, 28, 500)
 	_movie_ui.add_child(_subtitle)
 	_skip = UiStyle.button("Пропустить", _finish_intro, 20)
@@ -107,6 +115,15 @@ func _build_ui() -> void:
 	_skip.offset_bottom = -12
 	_skip.focus_mode = Control.FOCUS_NONE
 	_movie_ui.add_child(_skip)
+	_choices = VBoxContainer.new()
+	_choices.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	_choices.offset_left = 90
+	_choices.offset_right = -90
+	_choices.offset_top = -242
+	_choices.offset_bottom = -128
+	_choices.add_theme_constant_override(&"separation", 10)
+	_movie_ui.add_child(_choices)
+	_choices.hide()
 
 
 func _start_training() -> void:
@@ -117,9 +134,13 @@ func _start_training() -> void:
 		if is_instance_valid(enemy):
 			enemy.queue_free()
 	enemies.clear()
+	if is_instance_valid(_aftermath):
+		_aftermath.reset()
+	_choices.hide()
 	_hero.call(&"_set_target", null)
 	_hero.call(&"_set_state", PlayerCombat.State.NORMAL)
 	_hero.restore()
+	_hero.call(&"set_peaceful", false)
 	_hero.set(&"_knockback", Vector3.ZERO)
 	_hero.set(&"_move_velocity", Vector3.ZERO)
 	$Player.teleport(EPISODE.player_start, Vector3.FORWARD * -1)
@@ -180,12 +201,19 @@ func _camera_shot(from: Vector3, to: Vector3, look: Vector3, seconds: float) -> 
 
 
 func _process(delta: float) -> void:
-	if phase != Phase.INTRO and phase != Phase.ENDING:
+	if phase == Phase.TALK:
+		_cinema.look_at(_look)
+		return
+	if phase not in [Phase.INTRO, Phase.ENDING, Phase.SIGNAL_ENDING]:
 		return
 	# Загрузка шейдеров не должна съедать реплики одним долгим кадром.
 	_elapsed += minf(delta, 0.1)
 	if is_instance_valid(_cinema):
 		_cinema.look_at(_look)
+	if phase == Phase.SIGNAL_ENDING:
+		if _elapsed >= EPISODE.beacon_ending_seconds:
+			_show_result(true)
+		return
 	if phase == Phase.ENDING:
 		if _elapsed >= EPISODE.ending_seconds:
 			_show_result(true)
@@ -243,7 +271,9 @@ func _on_hero_died() -> void:
 
 
 func _show_result(won: bool) -> void:
-	phase = Phase.VICTORY if won else Phase.DEFEAT
+	var complete: bool = phase == Phase.SIGNAL_ENDING
+	_hero.call(&"set_peaceful", won)
+	phase = Phase.COMPLETE if complete else (Phase.VICTORY if won else Phase.DEFEAT)
 	training = false
 	if is_instance_valid(_dolly):
 		_dolly.kill()
@@ -252,9 +282,15 @@ func _show_result(won: bool) -> void:
 	_movie_ui.hide()
 	$HUD.show()
 	_hint.show()
-	_result.show()
-	_status.text = "Дуэль завершена · можно осмотреть двор или повторить эпизод" if won else "Поражение · подними клинок перед ударом, затем контратакуй"
-	if GameControls.using_gamepad:
+	_result.visible = not won or complete
+	if complete:
+		_status.text = "Сигнал зажжён · Аки спасена · эпизод завершён"
+	elif won:
+		_aftermath.set_survivor_active(true)
+		_status.text = "Из святилища кто-то вышел · поговори с выжившей у фонаря"
+	else:
+		_status.text = "Поражение · подними клинок перед ударом, затем контратакуй"
+	if GameControls.using_gamepad and _result.visible:
 		_retry.grab_focus()
 
 
@@ -267,7 +303,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_echo():
 		return
 	var escape: bool = event is InputEventKey and event.pressed and event.physical_keycode == KEY_ESCAPE
-	if phase == Phase.INTRO and (escape or event.is_action_pressed(&"interact") or event.is_action_pressed(&"ui_accept")):
+	if phase == Phase.TALK and (escape or event.is_action_pressed(&"ui_cancel")):
+		_close_conversation(false)
+		get_viewport().set_input_as_handled()
+	elif phase == Phase.INTRO and (escape or event.is_action_pressed(&"interact") or event.is_action_pressed(&"ui_accept")):
 		_finish_intro()
 		get_viewport().set_input_as_handled()
 	elif escape and not GameState.controls_locked:
@@ -280,6 +319,87 @@ func _on_control_scheme(gamepad: bool) -> void:
 		_skip.text = "✕ — пропустить" if gamepad else "E / Esc — пропустить"
 	if is_instance_valid(_hint):
 		_hint.text = "□ — удар · △ — тяжёлый · L1 — клинок / парирование · ○ — перекат · R3 — цель · Options — меню" if gamepad else "ЛКМ — удар · K — тяжёлый · Shift — клинок / парирование · пробел — перекат · Q — цель · Esc — меню"
+	if phase == Phase.TALK and gamepad and get_viewport().gui_get_focus_owner() == null:
+		_focus_choice()
+
+
+func _begin_conversation() -> void:
+	if phase != Phase.VICTORY:
+		return
+	phase = Phase.TALK
+	_aftermath.set_conversation_open(true)
+	_lock()
+	GameControls.consume_menu_action()
+	$Player.teleport(EPISODE.survivor_position + Vector3(1.2, 0, -0.65))
+	$Player.face_point(EPISODE.survivor_position)
+	var direction: Vector3 = $Player.position - EPISODE.survivor_position
+	_aftermath.survivor_model.rotation.y = atan2(-direction.x, -direction.z)
+	_aftermath.survivor_model.play(&"Idle_Talking")
+	_status.text = "Аки · выжившая из деревни"
+	_subtitle.text = "Аки: Я спряталась за святилищем. Людей увели к переправе. Зажги огонь — остальные увидят, что здесь безопасно."
+	_hint.hide()
+	$HUD.hide()
+	_movie_ui.show()
+	_skip.hide()
+	_camera_shot(Vector3(-0.5, 1.85, 1.7), Vector3(-0.7, 1.8, 2.1), EPISODE.survivor_position + Vector3(0.3, 1.1, 0), EPISODE.challenge_seconds)
+	_set_choices(false)
+
+
+func _set_choices(asked: bool) -> void:
+	for node: Node in _choices.get_children():
+		_choices.remove_child(node)
+		node.queue_free()
+	_choices.show()
+	var accept := UiStyle.button("Зажжём огонь. Покажи жаровню.", _close_conversation.bind(true), 26)
+	_choices.add_child(accept)
+	if not asked:
+		_choices.add_child(UiStyle.button("Кто напал на деревню?", func() -> void:
+			_subtitle.text = "Аки: Люди в тёмных доспехах. Искали лодочника. Их старший ждёт у переправы."
+			_set_choices(true), 26))
+	if GameControls.using_gamepad:
+		_focus_choice()
+
+
+func _focus_choice() -> void:
+	if is_instance_valid(_choices) and _choices.get_child_count() > 0:
+		(_choices.get_child(0) as Button).grab_focus()
+
+
+func _close_conversation(accept: bool) -> void:
+	if phase != Phase.TALK:
+		return
+	GameControls.consume_menu_action()
+	_choices.hide()
+	_movie_ui.hide()
+	$HUD.show()
+	_hint.show()
+	_aftermath.survivor_model.play(&"Idle_FoldArms")
+	_aftermath.set_conversation_open(false)
+	_unlock()
+	_restore_camera()
+	phase = Phase.SIGNAL if accept else Phase.VICTORY
+	if accept:
+		_aftermath.enable_beacon()
+		_status.text = "Зажги сигнальную жаровню слева от святилища"
+	else:
+		_status.text = "Поговори с Аки, чтобы узнать о пропавших жителях"
+
+
+func _light_signal() -> void:
+	if phase != Phase.SIGNAL:
+		return
+	_aftermath.ignite()
+	phase = Phase.SIGNAL_ENDING
+	_elapsed = 0
+	_lock()
+	GameControls.consume_menu_action()
+	_hint.hide()
+	$HUD.hide()
+	_movie_ui.show()
+	_skip.hide()
+	_status.text = "Огонь надежды"
+	_subtitle.text = "Аки: Они увидят дым. А я покажу тебе тропу к переправе."
+	_camera_shot(Vector3(-10, 3.2, 1.4), Vector3(-9.3, 3.6, 2.4), EPISODE.beacon_position + Vector3(0.5, 1.5, 0), EPISODE.beacon_ending_seconds)
 
 
 func pause_restart_label() -> String:

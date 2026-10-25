@@ -94,10 +94,52 @@ func _run() -> void:
 	guard.get(&"_hurtbox").receive(HIT.new(1000.0, 0.0, player, Vector3.ZERO))
 	_check("Победа запускает финальный кадр", int(scene.get(&"phase")) == 2 and gs.get(&"controls_locked"))
 	await create_timer(3.7).timeout
-	_check("После финала можно осмотреть двор и повторить", int(scene.get(&"phase")) == 3 and not gs.get(&"controls_locked") and scene.get(&"_result").visible)
+	var aftermath := scene.get_node(^"Aftermath")
+	_check("После дуэли появляется выжившая и новая цель", int(scene.get(&"phase")) == 3 and not gs.get(&"controls_locked") and aftermath.get(&"survivor").visible and not scene.get(&"_result").visible)
+	var beacon: Node = aftermath.get(&"beacon_area")
+	beacon.call(&"interact")
+	_check("После боя Мара опускает оружие для разговора", hero.get(&"peaceful") and not hero.get(&"_held")["weapon"].visible)
+	_check("До разговора нельзя завершить задание жаровней", int(scene.get(&"phase")) == 3 and not aftermath.get(&"burning"))
+	player.call(&"teleport", Vector3(-2, 0.2, 2.4))
+	await create_timer(0.12).timeout
+	var interact := InputEventKey.new()
+	interact.physical_keycode = KEY_E
+	interact.pressed = true
+	Input.parse_input_event(interact)
+	await process_frame
+	await process_frame
+	var released := interact.duplicate() as InputEventKey
+	released.pressed = false
+	Input.parse_input_event(released)
+	await process_frame
+	_check("E рядом с Аки открывает диалог и блокирует бой", int(scene.get(&"phase")) == 5 and gs.get(&"controls_locked"))
+	var choices: VBoxContainer = scene.get(&"_choices")
+	_check("Можно согласиться помочь или расспросить о налётчиках", choices.get_child_count() == 2)
+	await _pad(JOY_BUTTON_DPAD_DOWN)
+	_check("Крестовина выбирает второй ответ", root.gui_get_focus_owner() == choices.get_child(1))
+	await _pad(JOY_BUTTON_A)
+	_check("Вопрос даёт отдельную реплику без преждевременной выдачи задания", int(scene.get(&"phase")) == 5 and choices.get_child_count() == 1 and scene.get(&"_subtitle").text.contains("лодочника"))
+	await _pad(JOY_BUTTON_B)
+	_check("Круг закрывает разговор без случайного переката", int(scene.get(&"phase")) == 3 and not gs.get(&"controls_locked") and int(hero.get(&"state")) == 0)
+	aftermath.get(&"survivor_area").call(&"interact")
+	await process_frame
+	await _pad(JOY_BUTTON_A)
+	_check("Крестик принимает задание и возвращает игровую камеру", int(scene.get(&"phase")) == 6 and not gs.get(&"controls_locked") and root.get_camera_3d().name != &"EpisodeCamera" and beacon.get(&"enabled"))
+	player.call(&"walk_to", Vector3(-1.9, 0.1, 4.0))
+	await create_timer(1.0).timeout
+	player.call(&"walk_to", Vector3(-5.0, 0.1, 4.0))
+	await create_timer(1.5).timeout
+	_check("К жаровне можно дойти по земле без телепорта и прыжка на веранду", Vector2(player.position.x + 5.0, player.position.z - 4.0).length() < 0.4)
+	await create_timer(0.12).timeout
+	await _pad(JOY_BUTTON_A)
+	_check("Взаимодействие с жаровней включает огонь и финальный кадр", int(scene.get(&"phase")) == 7 and aftermath.get(&"burning") and gs.get(&"controls_locked"))
+	beacon.call(&"interact")
+	await create_timer(4.4).timeout
+	_check("Задание завершается один раз и открывает повтор", int(scene.get(&"phase")) == 8 and not gs.get(&"controls_locked") and scene.get(&"_result").visible)
 	_check("Параметры обычного разбойника не изменились", is_equal_approx(float(bandit.get(&"max_health")), original_health))
 	scene.call(&"_start_training")
 	await process_frame
+	_check("Повтор гасит огонь и скрывает выжившую до победы", not aftermath.get(&"burning") and not aftermath.get(&"survivor").visible and not beacon.get(&"enabled") and not hero.get(&"peaceful"))
 	scene.call(&"_menu")
 	await process_frame
 	await process_frame
@@ -109,3 +151,18 @@ func _run() -> void:
 	cleanup.free()
 	print("shrine_episode test: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+func _pad(button: JoyButton) -> void:
+	var event := InputEventJoypadButton.new()
+	event.device = 42
+	event.button_index = button
+	event.pressed = true
+	Input.parse_input_event(event)
+	await process_frame
+	await process_frame
+	var released := event.duplicate() as InputEventJoypadButton
+	released.pressed = false
+	Input.parse_input_event(released)
+	await process_frame
+	await physics_frame

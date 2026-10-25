@@ -3,6 +3,21 @@ extends "res://scripts/raid/raid_combat.gd"
 
 const EPISODE: ShrineEpisodeConfig = preload("res://resources/japan/episode.tres")
 const KATANA: PackedScene = preload("res://resources/japan/katana/katana.tscn")
+var peaceful: bool = false
+
+
+func set_peaceful(value: bool) -> void:
+	peaceful = value
+	if _held.has("weapon"):
+		_held["weapon"].visible = not value
+
+
+func _read_input(direction: Vector3) -> void:
+	if GameControls.actions_suppressed():
+		return
+	if peaceful and (Input.is_action_just_pressed(&"attack") or Input.is_action_just_pressed(&"heavy_attack") or Input.is_action_pressed(&"block")):
+		set_peaceful(false)
+	super(direction)
 
 
 func _arm() -> void:
@@ -12,6 +27,7 @@ func _arm() -> void:
 	var weapon := KATANA.instantiate() as Node3D
 	_model.attach_to_bone(weapon, &"hand_r", GameState.item("bronze_sword").hold_offset)
 	_held["weapon"] = weapon
+	weapon.visible = not peaceful
 
 
 func _has_shield() -> bool:
@@ -36,7 +52,9 @@ func attack_damage() -> float:
 
 
 func _play_locomotion(moving: bool) -> void:
-	if blocking:
+	if peaceful:
+		_model.play(&"Jog_Fwd" if moving else &"Idle")
+	elif blocking:
 		_model.play(&"Sword_Block")
 	elif moving:
 		_model.play(&"Jog_Fwd")

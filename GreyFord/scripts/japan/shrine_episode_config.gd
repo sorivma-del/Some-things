@@ -13,3 +13,7 @@ extends Resource
 @export var player_start: Vector3
 @export var duel_start: Vector3
 @export var opponent_start: Vector3
+
+@export var survivor_position: Vector3
+@export var beacon_position: Vector3
+@export var beacon_ending_seconds: float
