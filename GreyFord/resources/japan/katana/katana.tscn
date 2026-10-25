@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://resources/japan/katana/Katana.obj" id="mesh"]
+
+[sub_resource type="StandardMaterial3D" id="blade"]
+albedo_color = Color(0.56, 0.6, 0.63, 1)
+metallic = 0.92
+roughness = 0.27
+
+[sub_resource type="StandardMaterial3D" id="edge"]
+albedo_color = Color(0.8, 0.83, 0.86, 1)
+metallic = 0.95
+roughness = 0.2
+
+[node name="Katana" type="Node3D"]
+
+[node name="BladeAndHandle" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.49, 0)
+mesh = ExtResource("mesh")
+surface_material_override/5 = SubResource("blade")
+surface_material_override/6 = SubResource("edge")

@@ -164,7 +164,8 @@ func open_pause() -> void:
 	column.add_child(resume)
 	var scene := get_tree().current_scene
 	if scene.has_method(&"_start_training"):
-		var practice := UiStyle.button("Начать тренировку", _start_training, 28)
+		var restart_label: String = scene.call(&"pause_restart_label") if scene.has_method(&"pause_restart_label") else "Начать тренировку"
+		var practice := UiStyle.button(restart_label, _start_training, 28)
 		practice.disabled = bool(scene.get(&"training"))
 		column.add_child(practice)
 	if scene.has_method(&"set_evening"):

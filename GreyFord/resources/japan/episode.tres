@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ShrineEpisodeConfig" format=3]
+
+[ext_resource type="Script" path="res://scripts/japan/shrine_episode_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+arrival_seconds = 4.2
+challenge_seconds = 3.8
+answer_seconds = 3.4
+ending_seconds = 3.5
+skip_grace = 0.4
+opponent_health = 100.0
+katana_damage = 24.0
+block_cost_factor = 0.85
+player_start = Vector3(0, 0.2, -10)
+duel_start = Vector3(0, 0.2, -5.8)
+opponent_start = Vector3(0.3, 0.2, -0.7)

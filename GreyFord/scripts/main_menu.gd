@@ -46,6 +46,7 @@ func _ready() -> void:
 	column.add_child(_continue)
 	column.add_child(_button("Земли за Бродом", _on_world))
 	column.add_child(_button("Набег на Серый Брод", _on_raid))
+	column.add_child(_button("Тропа к святилищу", _on_shrine_episode))
 	column.add_child(_button("Двор у святилища", _on_courtyard))
 	column.add_child(_button("Арена (бой)", _on_arena))
 	column.add_child(_button("Выход", func() -> void: get_tree().quit()))
@@ -111,3 +112,10 @@ func _on_courtyard() -> void:
 func _on_control_scheme(gamepad: bool) -> void:
 	if gamepad and is_instance_valid(_first_button) and get_viewport().gui_get_focus_owner() == null:
 		_first_button.grab_focus()
+
+
+func _on_shrine_episode() -> void:
+	GameState.new_game()
+	GameState.play_intro = false
+	await Transition.fade_out(0.5)
+	get_tree().change_scene_to_file("res://scenes/japan/shrine_episode.tscn")
