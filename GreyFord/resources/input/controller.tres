@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="ControllerConfig" format=3]
+[ext_resource type="Script" path="res://scripts/input/controller_config.gd" id="1"]
+[resource]
+script = ExtResource("1")
+deadzone = 0.22
+look_speed = 150.0
+menu_input_grace = 0.08

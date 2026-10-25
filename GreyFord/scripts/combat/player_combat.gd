@@ -230,6 +230,8 @@ func restore() -> void:
 #region Input and actions
 
 func _read_input(direction: Vector3) -> void:
+	if GameControls.actions_suppressed():
+		return
 	if Input.is_action_just_pressed(&"heal") and state == State.NORMAL:
 		_use_heal()
 	if Input.is_action_just_pressed(&"lock_on"):

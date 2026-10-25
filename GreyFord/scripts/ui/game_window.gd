@@ -10,6 +10,7 @@ const PANEL_SIZE := Vector2(1040, 620)
 
 var is_open: bool = false
 
+var _close_button: Button
 var _title: Label
 var _subtitle: Label
 var _content: VBoxContainer
@@ -57,6 +58,8 @@ func _ready() -> void:
 	_content.add_theme_constant_override(&"separation", 4)
 	scroll.add_child(_content)
 	var close := UiStyle.button("Закрыть  (Esc)", close_window, 24)
+	_close_button = close
+	GameControls.scheme_changed.connect(_focus_controls)
 	close.size_flags_horizontal = Control.SIZE_SHRINK_END
 	column.add_child(close)
 	GameState.inventory_changed.connect(_refresh_if_open)
@@ -71,6 +74,7 @@ func open_window() -> void:
 	visible = true
 	GameState.lock_controls()
 	_refresh()
+	_focus_controls(GameControls.using_gamepad)
 
 
 func close_window() -> void:
@@ -79,6 +83,7 @@ func close_window() -> void:
 	is_open = false
 	visible = false
 	GameState.unlock_controls()
+	GameControls.consume_menu_action()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -141,3 +146,14 @@ func _row(parent: Container, name: String, details: String, note: String, action
 		button.disabled = not enabled
 		line.add_child(button)
 	parent.add_child(row)
+
+
+func _focus_controls(gamepad: bool) -> void:
+	if not is_open or not gamepad:
+		return
+	for node: Node in _content.find_children("*", "Button", true, false):
+		var button := node as Button
+		if button.is_visible_in_tree() and not button.disabled:
+			button.grab_focus.call_deferred()
+			return
+	_close_button.grab_focus.call_deferred()

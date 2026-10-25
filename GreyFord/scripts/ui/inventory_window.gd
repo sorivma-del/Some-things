@@ -12,7 +12,8 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"inventory"):
 		if is_open:
-			close_window()
+			if not event is InputEventJoypadButton:
+				close_window()
 		elif not GameState.controls_locked:
 			open_window()
 		get_viewport().set_input_as_handled()

@@ -33,6 +33,8 @@ func drive(direction: Vector3, delta: float) -> void:
 
 
 func _read_input(direction: Vector3) -> void:
+	if GameControls.actions_suppressed():
+		return
 	if state == State.NORMAL and Input.is_action_just_pressed(&"heavy_attack"):
 		_start_heavy()
 		return
@@ -129,7 +131,7 @@ func _on_hit(info: HitInfo) -> void:
 		_counter_left = RAID.counter_window
 		_play_sound(&"block")
 		HitFeel.hitstop(get_tree(), data.hitstop_hurt_ms)
-		GameState.notified.emit("Парирование! ЛКМ — контратака")
+		GameState.notified.emit("Парирование! %s — контратака" % GameControls.attack_button())
 		parried.emit(info.source)
 		return
 	super(info)

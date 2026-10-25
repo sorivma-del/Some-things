@@ -58,6 +58,10 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if target == null:
 		return
+	if not GameState.controls_locked and _speaker == null and not is_instance_valid(_lock_target):
+		var look := Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down")
+		yaw_degrees -= look.x * GameControls.CONFIG.look_speed * delta
+		pitch_degrees = clampf(pitch_degrees - look.y * GameControls.CONFIG.look_speed * delta, pitch_limits.x, pitch_limits.y)
 	var goal := target.global_position + Vector3.UP * height
 	var length := distance
 	if _speaker:

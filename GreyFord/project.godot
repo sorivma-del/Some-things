@@ -21,6 +21,7 @@ DialogueManager="*res://addons/dialogue_manager/dialogue_manager.gd"
 GameState="*res://scripts/autoload/game_state.gd"
 DialogueRunner="*res://scripts/autoload/dialogue_runner.gd"
 Transition="*res://scripts/autoload/transition.gd"
+GameControls="*res://scripts/autoload/game_controls.gd"
 DebugMenu="*res://scripts/autoload/debug_menu.gd"
 
 [debug]

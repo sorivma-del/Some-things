@@ -29,6 +29,8 @@ var _hint: Label
 func _ready() -> void:
 	layer = 10
 	_build_ui()
+	GameControls.scheme_changed.connect(_on_control_scheme)
+	_on_control_scheme(GameControls.using_gamepad)
 
 
 func start(resource: DialogueResource, cue: String, extra_game_states: Array = []) -> void:
@@ -109,7 +111,7 @@ func _show_responses() -> void:
 		var button := Button.new()
 		button.text = "%d   %s" % [i + 1, _responses[i].text]
 		button.flat = true
-		button.focus_mode = Control.FOCUS_NONE
+		button.focus_mode = Control.FOCUS_ALL
 		button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		button.add_theme_font_override(&"font", UiStyle.font(500, true))
 		button.add_theme_font_size_override(&"font_size", RESPONSE_SIZE)
@@ -123,6 +125,7 @@ func _show_responses() -> void:
 		_responses_box.add_child(button)
 		create_tween().tween_property(button, ^"modulate:a", 1.0, 0.35).set_delay(0.08 * i)
 	_responses_box.show()
+	_on_control_scheme(GameControls.using_gamepad)
 
 
 func _clear_responses() -> void:
@@ -167,7 +170,16 @@ func _build_ui() -> void:
 	column.add_child(_responses_box)
 
 	_hint = Label.new()
-	_hint.text = "E"
+	_hint.text = GameControls.interact_button()
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UiStyle.apply_label(_hint, 16, 600, false, UiStyle.COLOR_DIM, 2)
 	column.add_child(_hint)
+
+
+func _on_control_scheme(gamepad: bool) -> void:
+	_hint.text = GameControls.interact_button()
+	if gamepad and _responses_box.visible and not _responses.is_empty():
+		for node: Node in _responses_box.get_children():
+			if node is Button and not node.is_queued_for_deletion():
+				(node as Button).grab_focus()
+				break

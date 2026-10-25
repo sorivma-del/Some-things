@@ -34,11 +34,13 @@ var _target_name: Label
 var _target_posture: ProgressBar
 var _target_hint: Label
 var _target_bar: ProgressBar
+var _interaction_text: String = ""
 var _target: Node3D
 
 
 func _ready() -> void:
 	add_to_group(&"hud")
+	GameControls.scheme_changed.connect(_on_control_scheme)
 	UiStyle.apply_label(_prompt, 24, 600, true, UiStyle.COLOR_TEXT)
 	_prompt.modulate.a = 0.0
 	var detector := get_tree().get_first_node_in_group(InteractionDetector.GROUP) as InteractionDetector
@@ -259,8 +261,9 @@ func _bar(color: Color, bar_size: Vector2) -> ProgressBar:
 
 
 func _on_focus_changed(prompt: String) -> void:
+	_interaction_text = prompt
 	if not prompt.is_empty():
-		_prompt.text = "E   %s" % prompt
+		_prompt.text = "%s   %s" % [GameControls.interact_button(), prompt]
 	create_tween().tween_property(_prompt, ^"modulate:a", 0.0 if prompt.is_empty() else 1.0, 0.2)
 
 
@@ -313,3 +316,8 @@ func _roll_label(size: int, weight: int, italic: bool, color: Color, spacing: in
 	UiStyle.apply_label(label, size, weight, italic, color, spacing)
 	_roll_box.add_child(label)
 	return label
+
+
+func _on_control_scheme(_gamepad: bool) -> void:
+	if not _interaction_text.is_empty():
+		_prompt.text = "%s   %s" % [GameControls.interact_button(), _interaction_text]

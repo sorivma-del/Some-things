@@ -6,6 +6,7 @@ const ARENA_SCENE := "res://scenes/test/combat_arena.tscn"
 const WORLD_SCENE := "res://scenes/world/open_world.tscn"
 const BACKGROUND: Texture2D = preload("res://resources/ui/menu_background.jpg")
 
+var _first_button: Button
 var _continue: Button
 
 
@@ -38,14 +39,18 @@ func _ready() -> void:
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 36)
 	column.add_child(gap)
-	column.add_child(_button("Играть", _on_play))
+	_first_button = _button("Играть", _on_play)
+	column.add_child(_first_button)
 	_continue = _button("Продолжить", _on_continue)
 	_continue.disabled = not GameState.has_save()
 	column.add_child(_continue)
 	column.add_child(_button("Земли за Бродом", _on_world))
 	column.add_child(_button("Набег на Серый Брод", _on_raid))
+	column.add_child(_button("Двор у святилища", _on_courtyard))
 	column.add_child(_button("Арена (бой)", _on_arena))
 	column.add_child(_button("Выход", func() -> void: get_tree().quit()))
+	GameControls.scheme_changed.connect(_on_control_scheme)
+	_on_control_scheme(GameControls.using_gamepad)
 	Transition.fade_in(0.8)
 
 
@@ -94,3 +99,15 @@ func _on_raid() -> void:
 	GameState.play_intro = false
 	await Transition.fade_out(0.8)
 	get_tree().change_scene_to_file("res://scenes/raid/village_raid.tscn")
+
+
+func _on_courtyard() -> void:
+	GameState.new_game()
+	GameState.play_intro = false
+	await Transition.fade_out(0.5)
+	get_tree().change_scene_to_file("res://scenes/japan/courtyard.tscn")
+
+
+func _on_control_scheme(gamepad: bool) -> void:
+	if gamepad and is_instance_valid(_first_button) and get_viewport().gui_get_focus_owner() == null:
+		_first_button.grab_focus()

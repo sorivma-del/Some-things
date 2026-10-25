@@ -37,6 +37,7 @@ func _ready() -> void:
 		GateStreetLook.apply($Village)
 	_disable_story_interactions()
 	_hero.died.connect(_on_hero_died)
+	GameControls.scheme_changed.connect(_on_control_scheme)
 	$Environment.call(&"set_world_look", LOOK)
 	$Environment.call(&"_apply", "evening", 0.0)
 	_begin.call_deferred()
@@ -88,7 +89,7 @@ func start_attack() -> void:
 	$CameraRig.call(&"make_current")
 	_unlock()
 	_set_phase(Phase.FIRST_WAVE)
-	_objective("Удержите улицу у ворот", "ЛКМ / J — удар · K — тяжёлый · Shift — блок / парирование · пробел — перекат · Q — цель")
+	_objective("Удержите улицу у ворот", GameControls.combat_hint())
 	if alive_count() == 0:
 		_spawn_wave(CONFIG.first_wave_count, false)
 	else:
@@ -315,3 +316,8 @@ func _retry() -> void:
 func _menu() -> void:
 	_unlock()
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+
+func _on_control_scheme(_gamepad: bool) -> void:
+	if phase == Phase.FIRST_WAVE:
+		_caption.text = GameControls.combat_hint()
