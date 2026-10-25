@@ -81,9 +81,9 @@ static func _sanctuary(root: Node3D, wood: Material, plaster: Material, roof: Ma
 		Build.box(hall, Vector3(0.17, 2.8, 0.2), Vector3(x, 2.08, -3.5), wood)
 		Build.box(hall, Vector3(0.22, 0.19, 7.4), Vector3(x, 3.35, 0), wood)
 	Build.box(hall, Vector3(8.5, 0.25, 0.3), Vector3(0, 3.42, -3.55), wood)
-	var paper := StandardMaterial3D.new()
-	paper.albedo_color = Color(0.68, 0.63, 0.47)
-	paper.roughness = 1.0
+	var paper := ShaderMaterial.new()
+	paper.shader = load("res://resources/japan/paper.gdshader") as Shader
+	root.set_meta(&"paper", paper)
 	for panel: int in 6:
 		var x := -3.15 + panel * 1.26
 		Build.box(hall, Vector3(1.18, 2.25, 0.08), Vector3(x, 1.93, -1.69), paper)
@@ -96,12 +96,12 @@ static func _sanctuary(root: Node3D, wood: Material, plaster: Material, roof: Ma
 	for side: float in [-1.0, 1.0]:
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		var points: Array[Vector3] = [Vector3(-3.75, 3.35, side * 3.55), Vector3(3.75, 3.35, side * 3.55), Vector3(0, 6.4, side * 3.55)]
-		if side > 0:
-			points.reverse()
-		for point: Vector3 in points:
-			st.set_uv(Vector2(point.x, point.y))
-			st.add_vertex(point)
+		for i: int in 24:
+			var x0 := -5.05 + i * 10.1 / 24.0
+			var x1 := -5.05 + (i + 1) * 10.1 / 24.0
+			var y0 := _roof_y(absf(x0) / 5.05) - 0.1
+			var y1 := _roof_y(absf(x1) / 5.05) - 0.1
+			_quad(st, [Vector3(x0, 3.35, side * 4.22), Vector3(x1, 3.35, side * 4.22), Vector3(x1, y1, side * 4.22), Vector3(x0, y0, side * 4.22)], side > 0)
 		st.generate_normals()
 		st.generate_tangents()
 		st.index()
@@ -222,11 +222,12 @@ static func _lantern(root: Node3D, pos: Vector3, stone: Material, roof: Material
 
 static func _pond(root: Node3D, stone: Material) -> void:
 	Build.box(root, Vector3(4.5, 0.14, 6.5), Vector3(8, 0.12, 1.2), stone)
-	var water := StandardMaterial3D.new()
-	water.albedo_color = Color(0.075, 0.14, 0.13)
-	water.roughness = 0.13
-	water.metallic = 0.2
-	Build.box(root, Vector3(4, 0.02, 6), Vector3(8, 0.2, 1.2), water)
+	var water := ShaderMaterial.new()
+	water.resource_name = "CourtyardWater"
+	water.shader = load("res://resources/japan/water.gdshader") as Shader
+	var surface := Build.box(root, Vector3(4, 0.02, 6), Vector3(8, 0.2, 1.2), water)
+	surface.name = "ReflectingPool"
+	root.set_meta(&"water", surface)
 	for side: float in [-1.0, 1.0]:
 		Build.box(root, Vector3(0.25, 0.25, 6.5), Vector3(8 + side * 2.2, 0.22, 1.2), stone)
 		Build.box(root, Vector3(4.5, 0.25, 0.25), Vector3(8, 0.22, 1.2 + side * 3.2), stone)
@@ -291,6 +292,8 @@ static func _batch(root: Node3D) -> void:
 		if indices.is_empty():
 			continue
 		var material := mesh.material_override if mesh.material_override else mesh.mesh.surface_get_material(0)
+		if material.resource_name == "CourtyardWater":
+			continue
 		if not batches.has(material):
 			var st := SurfaceTool.new()
 			st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -333,13 +336,39 @@ static func _rock_gardens(root: Node3D, stone: Material) -> void:
 	for center: Vector3 in [Vector3(-8, 0, -0.5), Vector3(-8.5, 0, 7), Vector3(8.5, 0, 10.5)]:
 		Build.cylinder(root, 1.9, 0.025, center + Vector3(0, 0.06, 0), moss, 18)
 		for i: int in 3:
-			var rock := SphereMesh.new()
-			rock.radius = 0.55
-			rock.height = 1.1
-			rock.radial_segments = 9
-			rock.rings = 5
+			var rock := boulder_mesh(i + int(center.x) * 13)
 			var pos := center + Vector3(-0.9 + i * 0.8, 0.18, sin(i * 5) * 0.5)
-			var mesh := Build.mesh(root, rock, stone, pos)
+			var mesh := MeshInstance3D.new()
+			mesh.mesh = rock
+			mesh.material_override = stone
+			mesh.position = pos
+			root.add_child(mesh)
 			mesh.scale = Vector3(1.3, 0.6 + i * 0.35, 1.0)
 			mesh.rotation.y = i * 1.4
 			Build.static_box(root, Vector3(1.0, 0.7, 0.85), pos + Vector3(0, 0.1, 0))
+
+
+static func boulder_mesh(seed_value: int) -> ArrayMesh:
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.6
+	sphere.height = 1.2
+	sphere.radial_segments = 16
+	sphere.rings = 9
+	var arrays := sphere.surface_get_arrays(0)
+	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var noise := FastNoiseLite.new()
+	noise.seed = seed_value
+	noise.frequency = 2.8
+	for i: int in vertices.size():
+		var p := vertices[i]
+		vertices[i] = p * (1.0 + noise.get_noise_3dv(p) * 0.5)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = null
+	arrays[Mesh.ARRAY_TANGENT] = null
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var st := SurfaceTool.new()
+	st.create_from(mesh, 0)
+	st.generate_normals()
+	st.generate_tangents()
+	return st.commit()

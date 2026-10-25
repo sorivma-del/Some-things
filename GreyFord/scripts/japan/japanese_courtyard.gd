@@ -10,6 +10,7 @@ var training: bool = false
 var evening: bool = false
 var _old_taa: bool = false
 var _uses_taa: bool = false
+var _reflection_revision: int = 0
 var _env: Environment
 var _hint: Label
 var _status: Label
@@ -33,6 +34,7 @@ func _ready() -> void:
 	add_child(terrain)
 	terrain.build()
 	JapaneseProps.build(self)
+	ShrineDetail.build(self)
 	var wind := AudioStreamPlayer.new()
 	wind.stream = ProceduralSound.wind()
 	wind.volume_db = -20.0
@@ -43,7 +45,7 @@ func _ready() -> void:
 	_build_ui()
 	GameControls.scheme_changed.connect(_on_control_scheme)
 	_on_control_scheme(GameControls.using_gamepad)
-	set_evening(false)
+	set_evening(true)
 	_hero.died.connect(_on_hero_died)
 	_setup_hud.call_deferred()
 	Transition.fade_in(0.5)
@@ -62,15 +64,18 @@ func _unhandled_input(event: InputEvent) -> void:
 func set_evening(value: bool) -> void:
 	evening = value
 	var sky := _env.sky.sky_material as ProceduralSkyMaterial
-	sky.sky_top_color = Color(0.10, 0.17, 0.23) if value else Color(0.28, 0.41, 0.48)
-	sky.sky_horizon_color = Color(0.38, 0.45, 0.45) if value else Color(0.67, 0.72, 0.66)
-	_env.ambient_light_energy = 0.38 if value else 0.65
+	sky.sky_top_color = Color(0.065, 0.11, 0.17) if value else Color(0.28, 0.41, 0.48)
+	sky.sky_horizon_color = Color(0.27, 0.36, 0.39) if value else Color(0.67, 0.72, 0.66)
+	_env.ambient_light_energy = 0.3 if value else 0.48
 	_env.ambient_light_color = Color(0.55, 0.64, 0.72)
-	_env.fog_density = 0.013 if value else 0.008
+	_env.fog_density = 0.016 if value else 0.008
 	_env.fog_light_color = Color(0.33, 0.42, 0.44) if value else Color(0.58, 0.66, 0.64)
 	var sun := $Sun as DirectionalLight3D
-	sun.light_energy = 0.6 if value else 1.2
+	sun.light_energy = 0.45 if value else 1.1
+	var paper := $CourtyardArchitecture.get_meta(&"paper") as ShaderMaterial
+	paper.set_shader_parameter(&"warmth", 0.13 if value else 0.01)
 	sun.light_color = Color(0.68, 0.77, 0.85) if value else Color(1.0, 0.94, 0.82)
+	_refresh_reflection.call_deferred()
 
 
 func _build_ui() -> void:
@@ -191,3 +196,13 @@ func _exit_tree() -> void:
 
 func _on_control_scheme(gamepad: bool) -> void:
 	_hint.text = "ЛС — движение · ПС — камера · □ — удар · △ — тяжёлый · L1 — блок · ○ — перекат · R3 — цель · Options — меню" if gamepad else "WASD — движение · ПКМ — камера · " + GameControls.combat_hint()
+
+
+func _refresh_reflection() -> void:
+	_reflection_revision += 1
+	var revision := _reflection_revision
+	var probe := $ShrineDetail/PoolReflection as ReflectionProbe
+	probe.update_mode = ReflectionProbe.UPDATE_ALWAYS
+	await get_tree().create_timer(0.15).timeout
+	if is_inside_tree() and revision == _reflection_revision:
+		probe.update_mode = ReflectionProbe.UPDATE_ONCE
